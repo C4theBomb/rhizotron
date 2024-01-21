@@ -1,0 +1,27 @@
+{% load static %}
+{% load sass_tags %}
+<header class="main-nav">
+  <div class="logo-wrapper"><a href="/starter_kit"><img class="img-fluid"
+        src="{% static 'assets/images/logo/logo.png' %}" alt=""></a></div>
+  <div class="logo-icon-wrapper"><a href="/starter_kit"><img class="img-fluid"
+        src="{% static 'assets/images/logo/logo-icon.png' %}" alt=""></a></div>
+  <nav>
+    <div class="main-navbar">
+      <div id="mainnav">
+        <ul class="nav-menu custom-scrollbar">
+          <li class="back-btn">
+            <div class="mobile-back text-end"><span>Back</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i>
+            </div>
+          </li>
+          <li class="dropdown"><a class="nav-link menu-title" href="/" target="_blank"><i
+                data-feather="home"></i><span>Dashboard</span></a></li>
+
+          <li class="dropdown"><a class="nav-link menu-title" href="http://support.pixelstrap.com/help-center"
+              target="_blank"><i data-feather="headphones"></i><span>Raise Support</span></a></li>
+          <li><a class="nav-link menu-title" href="https://docs.pixelstrap.com/wingo/document/index.html"
+              target="_blank"><i data-feather="file-text"></i><span>Documentation </span></a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
