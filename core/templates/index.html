@@ -1,8 +1,14 @@
-{% extends 'base.html' %}{% load static %} {% load sass_tags %} {% block css %}
+{% extends 'base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block css %}
 <!-- Plugins css start-->
 <link rel="stylesheet" type="text/css" href="{% sass_src 'assets/scss/vendors/prism.scss' %}" />
 <!-- Plugins css Ends-->
-{% endblock css %} {% block content %}
+{% endblock css %}
+
+{% block content %}
 <div class="page-body">
     {% include 'layout/breadcrumb.html' %}
     <!-- Container-fluid starts-->
@@ -67,11 +73,8 @@
                             </li>
                         </ul>
                         <div class="code-box-copy">
-                            <button
-                                class="code-box-copy__btn btn-clipboard"
-                                data-clipboard-target="#example-head"
-                                title="Copy"
-                            >
+                            <button class="code-box-copy__btn btn-clipboard" data-clipboard-target="#example-head"
+                                title="Copy">
                                 <i class="icofont icofont-copy-alt"></i>
                             </button>
                             <pre><code class="language-html" id="example-head">&lt;!-- Cod Box Copy begin --&gt;
@@ -137,11 +140,8 @@
                             </li>
                         </ul>
                         <div class="code-box-copy">
-                            <button
-                                class="code-box-copy__btn btn-clipboard"
-                                data-clipboard-target="#example-head1"
-                                title="Copy"
-                            >
+                            <button class="code-box-copy__btn btn-clipboard" data-clipboard-target="#example-head1"
+                                title="Copy">
                                 <i class="icofont icofont-copy-alt"></i>
                             </button>
                             <pre><code class="language-html" id="example-head1">&lt;!-- Cod Box Copy begin --&gt;
@@ -207,11 +207,8 @@
                             </p>
                         </div>
                         <div class="code-box-copy">
-                            <button
-                                class="code-box-copy__btn btn-clipboard"
-                                data-clipboard-target="#example-head2"
-                                title="Copy"
-                            >
+                            <button class="code-box-copy__btn btn-clipboard" data-clipboard-target="#example-head2"
+                                title="Copy">
                                 <i class="icofont icofont-copy-alt"></i>
                             </button>
                             <pre><code class="language-html" id="example-head2">&lt;!-- Cod Box Copy begin --&gt;
@@ -272,8 +269,7 @@
 display: block;
 width: 300px;
 height: 80px;
-}</pre
-                        >
+}</pre>
                         <dl>
                             <dt>Definition list</dt>
                             <dd>
