@@ -1,7 +1,19 @@
 import numpy as np
 import cv2
 
-def threshold_mask(mask: np.ndarray, threshold_area: int = 50):
+
+def threshold_mask(mask: np.ndarray, threshold_area: int = 50) -> np.ndarray:
+    """
+    Apply thresholding to a binary mask based on contour area.
+
+    Parameters:
+        mask (np.ndarray): Binary mask image.
+        threshold_area (int, optional): Minimum contour area threshold. Defaults to 50.
+
+    Returns:
+        np.ndarray: Thresholded mask image.
+    """
+
     output_contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     hierarchy = hierarchy.squeeze(0)
 

@@ -8,10 +8,10 @@ def find_root_count(image: np.ndarray) -> int:
     Counts the number of roots in the given image.
 
     Parameters:
-    image (numpy.ndarray): The input image.
+        image (numpy.ndarray): The input image.
 
     Returns:
-    int: The number of roots in the image.
+        int: The number of roots in the image.
     """
 
     image_contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
@@ -24,11 +24,11 @@ def find_total_root_length(image: np.ndarray, scaling_factor: float) -> float:
     Calculates the total length of roots in an image.
 
     Parameters:
-    image (np.ndarray): The root image.
-    scaling_factor (float): The scaling factor to apply to the total length.
+        image (np.ndarray): The root image.
+        scaling_factor (float): The scaling factor to apply to the total length.
 
     Returns:
-    float: The calculated root length.
+        float: The calculated root length.
     """
 
     skeleton = skeletonize(image)
@@ -41,11 +41,11 @@ def find_total_root_area(image: np.ndarray, scaling_factor: float) -> float:
     Calculates the total area of roots in an image.
 
     Parameters:
-    image (np.ndarray): The root image.
-    scaling_factor (float): The scaling factor to apply to the total area.
+        image (np.ndarray): The root image.
+        scaling_factor (float): The scaling factor to apply to the total area.
 
     Returns:
-    float: The calculated root area.
+        float: The calculated root area.
     """
 
     return np.sum(image / 255) * (scaling_factor ** 2)
@@ -56,11 +56,11 @@ def find_root_diameter(image: np.ndarray, scaling_factor: float) -> float:
     Calculates the average diameter of roots in an image.
 
     Parameters:
-    image (np.ndarray): The root image.
-    scaling_factor (float): The scaling factor to apply to the total diameter.
+        image (np.ndarray): The root image.
+        scaling_factor (float): The scaling factor to apply to the total diameter.
 
     Returns:
-    float: The calculated root diameter.
+        float: The calculated root diameter.
     """
 
     skeleton = skeletonize(image).astype(np.uint8)
@@ -87,11 +87,11 @@ def find_total_root_volume(image: np.ndarray, scaling_factor: float) -> float:
     Calculates the total volume of roots in an image.
 
     Parameters:
-    image (np.ndarray): The root image.
-    scaling_factor (float): The scaling factor to apply to the total volume.
+        image (np.ndarray): The root image.
+        scaling_factor (float): The scaling factor to apply to the total volume.
 
     Returns:
-    float: The calculated root volume.
+        float: The calculated root volume.
     """
 
     skeleton = skeletonize(image).astype(np.uint8)
