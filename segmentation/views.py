@@ -2,9 +2,9 @@ import io
 from PIL import Image
 
 from django.http import HttpResponse
-from rest_framework.generics import GenericAPIView
+from django.db.models import Q
 from rest_framework.response import Response
-from rest_framework import permissions,  status
+from rest_framework import generics, viewsets, permissions, status, mixins
 
 import numpy as np
 import torch
@@ -12,13 +12,13 @@ from torchvision.transforms.v2 import functional as F
 
 from segmentation.processing import root_analysis, threshold, saving
 from segmentation.apps import SegmentationConfig
-from segmentation.serializers import SegmentationSerializer, AnalysisSerializer
+from segmentation.models import Dataset, Image, Prediction
+from segmentation.serializers import SegmentationSerializer, AnalysisSerializer, DatasetSerializer, ImageSerializer, PredictionSerializer 
 
 
-class SegmentationView(GenericAPIView):
+class SegmentationAPIView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = SegmentationSerializer
-    name = 'segmentation'
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -47,36 +47,11 @@ class SegmentationView(GenericAPIView):
         return HttpResponse(img_byte_arr.getvalue(), content_type='image/png')
 
 
-class SegmentationLabelmeView(GenericAPIView):
+class SegmentationLabelmeAPIView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = SegmentationSerializer
-    name = 'segmentation_labelme'
 
     def post(self, request):
-        """
-        Process a POST request to perform image segmentation.
-
-        This method takes in an image and a threshold value from the request data.
-        It performs image segmentation using the provided threshold and returns the segmented image data in JSON format.
-
-        Parameters:
-        - request: The HTTP request object containing the image and threshold data.
-
-        Returns:
-        - HttpResponse: The segmented image data in JSON format.
-
-        Raises:
-        - status.HTTP_400_BAD_REQUEST: If the request data is invalid.
-
-        Example Usage:
-        ```
-        POST /segmentation
-        {
-            "image": <image_data>,
-            "threshold": 0.5
-        }
-        ```
-        """
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
@@ -102,68 +77,11 @@ class SegmentationLabelmeView(GenericAPIView):
         return HttpResponse(labelme_data, content_type='application/json')
 
 
-class AnalysisView(GenericAPIView):
+class AnalysisAPIView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = AnalysisSerializer
-    name = 'analysis'
-
-    """
-    API endpoint for performing analysis on an image.
-
-    This view accepts a POST request with an image and a scaling factor.
-    It performs various root analysis calculations on the image and returns the results.
-
-    Parameters:
-    - image: The image file to be analyzed.
-    - scaling_factor: The scaling factor to convert pixel measurements to real-world measurements.
-
-    Returns:
-    A JSON response containing the following analysis results:
-    - root_count: The number of roots detected in the image.
-    - root_diameter: The average diameter of the roots in the image.
-    - total_root_area: The total area occupied by the roots in the image.
-    - total_root_length: The total length of the roots in the image.
-    - total_root_volume: The total volume of the roots in the image.
-
-    Example usage:
-    ```
-    POST /analysis/
-    {
-        "image": <image_file>,
-        "scaling_factor": 0.1
-    }
-    ```
-
-    Example response:
-    ```
-    {
-        "root_count": 10,
-        "root_diameter": 0.5,
-        "total_root_area": 100,
-        "total_root_length": 50,
-        "total_root_volume": 25
-    }
-    ```
-    """
 
     def post(self, request):
-        """
-        API endpoint for processing a POST request.
-
-        This endpoint receives an image and a scaling factor, performs root analysis on the image,
-        and returns the results in JSON format.
-
-        Parameters:
-        - request: The HTTP request object containing the image and scaling factor.
-
-        Returns:
-        - A JSON response containing the following root analysis results:
-            - root_count: The number of roots detected in the image.
-            - root_diameter: The average diameter of the roots in the image.
-            - total_root_area: The total area covered by the roots in the image.
-            - total_root_length: The total length of the roots in the image.
-            - total_root_volume: The total volume of the roots in the image.
-        """
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
@@ -182,3 +100,53 @@ class AnalysisView(GenericAPIView):
             'total_root_length': root_analysis.find_total_root_length(image, scaling_factor),
             'total_root_volume': root_analysis.find_total_root_volume(image, scaling_factor),
         }, content_type='application/json')
+
+
+class DatasetViewSet(viewsets.ModelViewSet):
+    serializer_class = DatasetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = Dataset.objects.all()
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(owner=request.user)
+        return Response(serializer.data)
+
+    def get_queryset(self):
+        return self.queryset.filter(Q(owner=self.request.user) | Q(public=True))
+
+class ImageViewSet(viewsets.ModelViewSet):
+    serializer_class = ImageSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = Image.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
+
+class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin):
+    serializer_class = PredictionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = Prediction.objects.all()
+
+    def list(self):
+        queryset = self.queryset.get(image=self.kwargs['image_pk'])
+        serializer = self.get_serializer(queryset)
+        return Response(serializer.data)
+    
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(owner=request.user)
+        return Response(serializer.data)
+
+    def delete(self, request):
+        queryset = self.queryset.get(image=self.kwargs['image_pk'], owner=request.user)
+        queryset.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
