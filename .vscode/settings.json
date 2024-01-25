@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "*.html": "jinja-html"
-    },
-    "files.exclude": {
-        "**/__pycache__": true
-    }
-}
