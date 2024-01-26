@@ -17,19 +17,28 @@ class DatasetSerializer(ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created', 'updated', 'owner']
     
-    def create(self, validated_data):
-        return Dataset.objects.create(**validated_data)
-    
 class ImageSerializer(ModelSerializer):
-    image = ImageField(required=False)
+    image = ImageField()
 
     class Meta:
         model = Image
         fields = '__all__'
-        read_only_fields = ['created', 'updated', 'read_only']
+        read_only_fields = ['created', 'updated', 'dataset']
+
     
 class PredictionSerializer(ModelSerializer):
     class Meta:
         model = Prediction
         fields = '__all__'
-        read_only_fields = ['created', 'updated', 'read_only']
+        read_only_fields = ['created', 'updated', 'image', 'mask']
+        write_only_fields = ['threshold']
+        extra_kwargs = {
+            'threshold': {'required': False, 'default': 0},
+        }
+    
+    def create(self, validated_data):
+        image = validated_data['image']
+        threshold = validated_data['threshold']
+        mask = validated_data['mask']
+        
+        return Prediction.objects.create(image=image, threshold=threshold, mask=mask)

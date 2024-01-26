@@ -3,16 +3,18 @@ from PIL import Image
 
 from django.http import HttpResponse
 from django.db.models import Q
-from rest_framework.response import Response
+from django.core.files import File
 from rest_framework import generics, viewsets, permissions, status, mixins
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 import numpy as np
 import torch
 from torchvision.transforms.v2 import functional as F
 
+from segmentation import models
 from segmentation.processing import root_analysis, threshold, saving
 from segmentation.apps import SegmentationConfig
-from segmentation.models import Dataset, Image, Prediction
 from segmentation.serializers import SegmentationSerializer, AnalysisSerializer, DatasetSerializer, ImageSerializer, PredictionSerializer 
 
 
@@ -105,11 +107,11 @@ class AnalysisAPIView(generics.GenericAPIView):
 class DatasetViewSet(viewsets.ModelViewSet):
     serializer_class = DatasetSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Dataset.objects.all()
+    queryset = models.Dataset.objects.all()
+    http_method_names = ['get', 'post', 'delete']
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
-
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -122,31 +124,67 @@ class DatasetViewSet(viewsets.ModelViewSet):
 class ImageViewSet(viewsets.ModelViewSet):
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Image.objects.all()
+    queryset = models.Image.objects.all()
+    http_method_names = ['get', 'post', 'delete']
+
+    def create(self, request, dataset_pk=None):
+        dataset = models.Dataset.objects.get(pk=dataset_pk)
+
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(dataset=dataset)
+        return Response(serializer.data)
 
     def get_queryset(self):
         return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
 
-class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin):
+class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin):
     serializer_class = PredictionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Prediction.objects.all()
+    queryset = models.Prediction.objects.all()
 
-    def list(self):
-        queryset = self.queryset.get(image=self.kwargs['image_pk'])
-        serializer = self.get_serializer(queryset)
+    def list(self, request, dataset_pk=None, image_pk=None):
+        queryset = self.queryset.filter(image=image_pk)
+        
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
+    def create(self, request, dataset_pk=None, image_pk=None):
+        original = models.Image.objects.get(pk=image_pk)
 
+        if original.mask is not None:
+            return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        area_threshold = serializer.validated_data['threshold']
 
-        serializer.save(owner=request.user)
+        image = Image.open(original.image)
+        image = np.array(image)
+        image = image[:, :, :3]
+        image = F.to_image(image)
+        image = F.to_dtype(image, torch.float32, scale=True)
+
+        image = image.unsqueeze(0)
+        image = SegmentationConfig.model(image).detach()
+        image = image.squeeze(0, 1)
+        image = image.numpy().astype(np.uint8)
+        image = threshold.threshold_mask(image, area_threshold)
+        image = F.to_pil_image(image)
+
+        mask_byte_arr = io.BytesIO()
+        image.save(mask_byte_arr, format='PNG')
+        mask = File(mask_byte_arr, name=f'{original.image.name.split(".")[0]}_mask.png')
+        
+        serializer.save(image=original, mask=mask)
         return Response(serializer.data)
 
-    def delete(self, request):
-        queryset = self.queryset.get(image=self.kwargs['image_pk'], owner=request.user)
+    @action(detail=False, methods=['delete'])
+    def delete(self, request, dataset_pk=None, image_pk=None):
+        queryset = self.queryset.get(image=self.kwargs['image_pk'])
         queryset.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
