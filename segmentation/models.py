@@ -22,6 +22,10 @@ class Image(models.Model):
     updated = models.DateTimeField(auto_now=True)
     image = models.ImageField(upload_to='images/')
 
+    def delete(self):
+        self.image.delete()
+        super().delete()
+
     def __unicode__(self):
         return self.name
     
@@ -33,6 +37,10 @@ class Prediction(models.Model):
     mask = models.ImageField(upload_to='masks/')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
+    def delete(self):
+        self.image.delete()
+        super().delete()
 
     def __unicode__(self):
         return self.name
