@@ -1,47 +1,57 @@
-{% load static %}
-{% load sass_tags %}
-<div class="page-main-header">
-  <div class="main-header-right row m-0">
-    <div class="main-header-left">
-      <div class="logo-wrapper"><a href="/"><img class="img-fluid" src="{% static 'assets/images/logo/logo.png' %}"
-            alt=""></a></div>
-    </div>
-    <div class="toggle-sidebar"><i class="status_toggle middle" data-feather="align-center" id="sidebar-toggle"></i>
-    </div>
-    <div class="left-menu-header col">
-      <ul>
-        <li>
-          <form class="form-inline search-form">
-            <div class="search-bg"><i class="fa fa-search"></i></div>
-            <input class="form-control-plaintext" placeholder="Search here.....">
-          </form><span class="d-sm-none mobile-search search-bg"><i class="fa fa-search"></i></span>
-        </li>
-      </ul>
-    </div>
-    <div class="nav-right col pull-right right-menu">
-      <ul class="nav-menus">
+{% load static %} {% load sass_tags %}
+<header class="p-3 mb-3 border-bottom">
+    <div class="container">
+        <div
+            class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start"
+        >
+            <a
+                href="/"
+                class="navbar-brand d-flex align-items-center mb-2 mb-lg-0 link-body-emphasis text-decoration-none"
+            >
+                <img src="{% static 'safari-pinned-tab.svg' %}" width="32px" height="32px" />
+            </a>
 
+            <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                <li>
+                    <a href="#" class="nav-link px-3 link-body-emphasis">Minirhizotron Webapp</a>
+                </li>
+                <li><a href="#" class="nav-link px-2 link-secondary">Home</a></li>
+                <li><a href="#" class="nav-link px-2 link-body-emphasis">Datasets</a></li>
+                <li><a href="#" class="nav-link px-2 link-body-emphasis">Label</a></li>
+                <li><a href="#" class="nav-link px-2 link-body-emphasis">Analyze</a></li>
+            </ul>
 
-
-        <li>
-          <div class="mode"><i class="fa fa-moon-o"></i></div>
-        </li>
-        <li><a class="text-dark" href="#!" onclick="javascript:toggleFullScreen()"><i data-feather="maximize"></i></a>
-        </li>
-        <li class="onhover-dropdown">
-          <div class="media profile-media"><img class="rounded-circle"
-              src="{% static 'assets/images/avtar/emoji/9.png' %}" alt=""></div>
-          <ul class="profile-dropdown onhover-show-div">
-            <li><i data-feather="user"></i><span>Account </span></li>
-            <li><i data-feather="mail"></i><span>Inbox</span></li>
-            <li><i data-feather="file-text"></i><span>Taskboard</span></li>
-            <li><i data-feather="settings"></i><span>Settings</span></li>
-            <li><a class="btn btn-light w-100" href="/login_simple"><i data-feather="log-in"></i>Log out</a>
-            </li>
-          </ul>
-        </li>
-      </ul>
+            {% if user.is_authenticated %}
+            <div class="dropdown text-end">
+                <a
+                    href="#"
+                    class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    <img
+                        src="{% static 'person-circle.svg' %}"
+                        alt="mdo"
+                        width="32px"
+                        height="32px"
+                        class="rounded-circle"
+                    />
+                </a>
+                <ul class="dropdown-menu text-small">
+                    <li><a class="dropdown-item" href="#">Settings</a></li>
+                    <li><a class="dropdown-item" href="#">Profile</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><a class="dropdown-item" href="#">Sign out</a></li>
+                </ul>
+            </div>
+            {% else %}
+            <div class="text-end">
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                    <li><a href="#" class="nav-link px-2 link-body-emphasis">Login</a></li>
+                    <li><a href="#" class="nav-link px-2 link-body-emphasis">Sign Up</a></li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
     </div>
-    <div class="d-lg-none col mobile-toggle pull-right"><i data-feather="more-horizontal"></i></div>
-  </div>
-</div>
+</header>

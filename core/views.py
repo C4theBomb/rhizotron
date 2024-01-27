@@ -1,6 +1,7 @@
+from django.views import View
 from django.shortcuts import render
 
 
-def starter_kit(request):
-    context = {"breadcrumb": {"parent": "Color Version", "child": "Layout Light"}}
-    return render(request, 'index.html', context)
+class Home(View):
+    def get(self, request):
+        return render(request, 'index.html')
