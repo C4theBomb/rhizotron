@@ -20,4 +20,5 @@ urlpatterns = [
     path('api/segmentation/', views.SegmentationAPIView.as_view()),
     path('api/segmentation/analysis/', views.AnalysisAPIView.as_view()),
     path('api/segmentation/labelme/', views.SegmentationLabelmeAPIView.as_view()),
+    path('datasets/', views.DatasetView.as_view()),
 ]

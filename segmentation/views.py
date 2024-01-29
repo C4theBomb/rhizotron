@@ -4,6 +4,7 @@ from PIL import Image
 from django.http import HttpResponse
 from django.db.models import Q
 from django.core.files import File
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from rest_framework import generics, viewsets, permissions, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,7 +16,7 @@ from torchvision.transforms.v2 import functional as F
 from segmentation import models
 from segmentation.processing import root_analysis, threshold, saving
 from segmentation.apps import SegmentationConfig
-from segmentation.serializers import SegmentationSerializer, AnalysisSerializer, DatasetSerializer, ImageSerializer, PredictionSerializer 
+from segmentation.serializers import SegmentationSerializer, AnalysisSerializer, DatasetSerializer, ImageSerializer, PredictionSerializer
 
 
 class SegmentationAPIView(generics.GenericAPIView):
@@ -121,6 +122,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return self.queryset.filter(Q(owner=self.request.user) | Q(public=True))
 
+
 class ImageViewSet(viewsets.ModelViewSet):
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -140,6 +142,7 @@ class ImageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
 
+
 class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin):
     serializer_class = PredictionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -147,10 +150,10 @@ class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.C
 
     def list(self, request, dataset_pk=None, image_pk=None):
         queryset = self.queryset.filter(image=image_pk)
-        
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
+
     def create(self, request, dataset_pk=None, image_pk=None):
         original = models.Image.objects.get(pk=image_pk)
 
@@ -160,7 +163,7 @@ class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.C
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         area_threshold = serializer.validated_data['threshold']
 
         image = Image.open(original.image)
@@ -179,7 +182,7 @@ class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.C
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
         mask = File(mask_byte_arr, name=f'{original.image.name.split(".")[0]}_mask.png')
-        
+
         serializer.save(image=original, mask=mask)
         return Response(serializer.data)
 
@@ -188,3 +191,12 @@ class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.C
         queryset = self.queryset.get(image=self.kwargs['image_pk'])
         queryset.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DatasetView(ListView):
+    model = models.Dataset
+    template_name = 'segmentation/index.html'
+    context_object_name = 'datasets'
+
+    def get_queryset(self):
+        return self.model.objects.filter(Q(owner=self.request.user) | Q(public=True))
