@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM python:3.10-slim-bullseye
-RUN apt update && apt install build-essential default-libmysqlclient-dev -y
+RUN apt update && apt install build-essential pkg-config default-libmysqlclient-dev ffmpeg libsm6 libxext6 -y
 WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN python -m pip install -r requirements.txt
