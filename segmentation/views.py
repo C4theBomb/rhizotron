@@ -1,4 +1,7 @@
 import io
+import os
+import zipfile
+import json
 from PIL import Image
 
 from django.http import HttpResponse
@@ -13,15 +16,14 @@ import numpy as np
 import torch
 from torchvision.transforms.v2 import functional as F
 
-from segmentation import models
+from segmentation import models, serializers
 from segmentation.processing import root_analysis, threshold, saving
 from segmentation.apps import SegmentationConfig
-from segmentation.serializers import SegmentationSerializer, AnalysisSerializer, DatasetSerializer, ImageSerializer, PredictionSerializer
 
 
 class SegmentationAPIView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
-    serializer_class = SegmentationSerializer
+    serializer_class = serializers.SegmentationSerializer
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -52,7 +54,7 @@ class SegmentationAPIView(generics.GenericAPIView):
 
 class SegmentationLabelmeAPIView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
-    serializer_class = SegmentationSerializer
+    serializer_class = serializers.SegmentationSerializer
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -82,7 +84,7 @@ class SegmentationLabelmeAPIView(generics.GenericAPIView):
 
 class AnalysisAPIView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
-    serializer_class = AnalysisSerializer
+    serializer_class = serializers.AnalysisSerializer
 
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -106,7 +108,7 @@ class AnalysisAPIView(generics.GenericAPIView):
 
 
 class DatasetViewSet(viewsets.ModelViewSet):
-    serializer_class = DatasetSerializer
+    serializer_class = serializers.DatasetSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = models.Dataset.objects.all()
     http_method_names = ['get', 'post', 'delete']
@@ -124,7 +126,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
 
 
 class ImageViewSet(viewsets.ModelViewSet):
-    serializer_class = ImageSerializer
+    serializer_class = serializers.ImageSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = models.Image.objects.all()
     http_method_names = ['get', 'post', 'delete']
@@ -143,10 +145,11 @@ class ImageViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
 
 
-class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin):
-    serializer_class = PredictionSerializer
+class PredictionViewSet(viewsets.ModelViewSet):
+    serializer_class = serializers.PredictionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     queryset = models.Prediction.objects.all()
+    http_method_names = ['get', 'post', 'delete', 'patch']
 
     def list(self, request, dataset_pk=None, image_pk=None):
         queryset = self.queryset.filter(image=image_pk)
@@ -157,7 +160,7 @@ class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.C
     def create(self, request, dataset_pk=None, image_pk=None):
         original = models.Image.objects.get(pk=image_pk)
 
-        if original.mask is not None:
+        if hasattr(original, 'mask') and original.mask is not None:
             return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
@@ -186,17 +189,92 @@ class PredictionViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.C
         serializer.save(image=original, mask=mask)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['delete'])
-    def delete(self, request, dataset_pk=None, image_pk=None):
-        queryset = self.queryset.get(image=self.kwargs['image_pk'])
-        queryset.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def partial_update(self, request, dataset_pk=None, image_pk=None, pk=None):
+        prediction = models.Prediction.objects.get(pk=pk)
+        serializer = self.get_serializer(prediction, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        area_threshold = serializer.validated_data['threshold']
+
+        image = Image.open(prediction.image.image)
+        image = np.array(image)
+        image = image[:, :, :3]
+        image = F.to_image(image)
+        image = F.to_dtype(image, torch.float32, scale=True)
+
+        image = image.unsqueeze(0)
+        image = SegmentationConfig.model(image).detach()
+        image = image.squeeze(0, 1)
+        image = image.numpy().astype(np.uint8)
+        image = threshold.threshold_mask(image, area_threshold)
+        image = F.to_pil_image(image)
+
+        mask_byte_arr = io.BytesIO()
+        image.save(mask_byte_arr, format='PNG')
+        mask = File(mask_byte_arr, name=f'{prediction.image.image.name.split(".")[0]}_mask.png')
+
+        serializer.save(image=prediction.image, mask=mask)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='labelme')
+    def export_label_me(self, request, dataset_pk=None, image_pk=None, pk=None):
+        prediction = models.Prediction.objects.get(pk=pk)
+
+        image = Image.open(prediction.image.image)
+        mask = Image.open(prediction.mask)
+        mask = np.array(mask)
+
+        labelme_data = saving.labelme(prediction.mask.name, mask)
+
+        outfile = io.BytesIO()
+        with zipfile.ZipFile(outfile, 'w') as zf:
+            with zf.open('labelme.json', 'w') as f:
+                f.write(labelme_data.encode('utf-8'))
+
+            with zf.open(os.path.basename(prediction.image.image.name), 'w') as f:
+                image.save(f, format='PNG')
+
+        response = HttpResponse(outfile.getvalue(), content_type='application/octet=stream')
+        response['Content-Disposition'] = f'attachment; filename={prediction.mask.name.split(".")[0]}_labelme.zip'
+
+        return response
+
+    @action(detail=False, methods=['post'], url_path='labelme')
+    def create_label_me(self, request, dataset_pk=None, image_pk=None):
+        serializer = self.get_serializer(data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if hasattr(models.Image.objects.get(pk=image_pk), 'mask'):
+            return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        original = models.Image.objects.get(pk=image_pk)
+        image = Image.open(original.image)
+        image = np.array(image)
+        labelme_data = json.loads(serializer.validated_data['json'].read().decode('utf-8'))
+
+        mask = saving.save_new_mask(image, labelme_data)
+        mask = Image.fromarray(mask)
+
+        mask_byte_arr = io.BytesIO()
+        mask.save(mask_byte_arr, format='PNG')
+        mask = File(mask_byte_arr, name=f'{original.image.name.split(".")[0]}_mask.png')
+
+        serializer.save(image=original, mask=mask)
+
+        return HttpResponse(labelme_data, content_type='application/json')
+
+    def get_serializer_class(self):
+        if (self.action == 'create_label_me' and self.request.method == 'POST'):
+            return serializers.LabelMeSerializer
+        else:
+            return self.serializer_class
 
 
 class DatasetView(ListView):
     model = models.Dataset
-    template_name = 'segmentation/index.html'
-    context_object_name = 'datasets'
+    template_name = 'dataset.html'
 
     def get_queryset(self):
         return self.model.objects.filter(Q(owner=self.request.user) | Q(public=True))
