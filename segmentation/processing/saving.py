@@ -41,3 +41,24 @@ def labelme(image_filename: str, image: np.ndarray) -> str:
     })
 
     return labelme_json
+
+
+def save_new_mask(image, mask_json) -> np.ndarray:
+    """
+    Save a new mask from a LabelMe JSON string.
+
+    Parameters:
+        json (str): The LabelMe JSON string.
+
+    Returns:
+        np.ndarray: The new mask.
+    """
+
+    mask = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
+    polygons = [shape['points'] for shape in mask_json['shapes']]
+    for polygon in polygons:
+        points = np.array(polygon, np.int32)
+        points = points.reshape((-1, 1, 2))
+        cv2.fillPoly(mask, [points], (255, 255, 255))
+
+    return mask
