@@ -1,0 +1,8 @@
+<div class="card" style="width: 18rem;">
+  <img class="card-img-top" src="{{ image.image.url }}" alt="Card image cap">
+  <div class="card-body">
+    <h5 class="card-title"><a href='{% url "segmentation:image_detail" image.dataset.id image.id %}'>{{image.filename}}</a></h5>
+    <p>Created at: {{ image.created }}</p>
+    <p>Updated at: {{ image.updated }}</p>
+  </div>
+</div>

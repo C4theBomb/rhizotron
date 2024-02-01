@@ -21,6 +21,15 @@ urlpatterns = [
     path('api/segmentation/', views.SegmentationAPIView.as_view()),
     path('api/segmentation/analysis/', views.AnalysisAPIView.as_view()),
     path('api/segmentation/labelme/', views.SegmentationLabelmeAPIView.as_view()),
-    path('datasets/', views.DatasetView.as_view(), name='dataset_list'),
-    path('datasets/<int:pk>/', views.DatasetDetailView.as_view(), name='dataset_detail'),
+
+    path('segmentation/', views.SegmentationView.as_view(), name='segmentation'),
+
+    path('datasets/', views.DatasetListView.as_view(), name='dataset_list'),
+    path('datasets/create/', views.DatasetCreateView.as_view(), name='dataset_create'),
+    path('datasets/<int:pk>/update/', views.DatasetUpdateView.as_view(), name='dataset_update'),
+    path('datasets/<int:pk>/delete/', views.DatasetDeleteView.as_view(), name='dataset_delete'),
+    path('datasets/<int:pk>/analytics', views.DatasetDetailView.as_view(), name='dataset_detail'),
+
+    path('datasets/<int:pk>/', views.ImagesListView.as_view(), name='image_list'),
+    path('datasets/<int:dataset_pk>/images/<int:pk>/', views.ImageDetailView.as_view(), name='image_detail'),
 ]

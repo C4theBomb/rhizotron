@@ -4,9 +4,9 @@
 
 {% block content %}
 
-<h3>Datasets</h3>
-{% for dataset in object_list %}
-{% include 'segmentation/components/dataset_card.html' with dataset=dataset %}
+<h3>Images</h3>
+{% for image in object_list %}
+{% include 'segmentation/components/image_card.html' with image=image %}
 {% endfor %}
 
 <div class="pagination">

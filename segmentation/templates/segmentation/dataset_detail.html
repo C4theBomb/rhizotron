@@ -3,5 +3,6 @@
 {% load sass_tags %}
 
 {% block content %}
+<a href='{% url "segmentation:dataset_delete" object.id %}' class="btn btn-danger" role="button" aria-pressed="true">Delete</a>
 {% include 'segmentation/components/dataset_card.html' with dataset=object %}
 {% endblock content %}
