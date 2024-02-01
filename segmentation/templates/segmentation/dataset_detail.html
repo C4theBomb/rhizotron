@@ -1,0 +1,7 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block content %}
+{% include 'segmentation/components/dataset_card.html' with dataset=object %}
+{% endblock content %}

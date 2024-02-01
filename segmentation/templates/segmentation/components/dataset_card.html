@@ -1,0 +1,10 @@
+<div class="card" style="width: 18rem;">
+  <div class="card-body">
+    <h5 class="card-title"><a href='{% url "segmentation:dataset_detail" dataset.id %}'>{{dataset.name}}</a></h5>
+    <p>Number of images: {{dataset.images.count}}</p>
+    <p>Description: {{dataset.description}}</p>
+    <p>Created at: {{dataset.created}}</p>
+    <p>Updated at: {{dataset.updated}}</p>
+    <p>Owner: {{dataset.owner}}</p>
+  </div>
+</div>

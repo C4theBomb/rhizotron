@@ -13,6 +13,7 @@ images_router.register('images', views.ImageViewSet)
 predictions_router = NestedSimpleRouter(images_router, 'images', lookup='image')
 predictions_router.register('predictions', views.PredictionViewSet)
 
+app_name = 'segmentation'
 urlpatterns = [
     path('api/', include(router.urls)),
     path('api/', include(images_router.urls)),
@@ -20,5 +21,6 @@ urlpatterns = [
     path('api/segmentation/', views.SegmentationAPIView.as_view()),
     path('api/segmentation/analysis/', views.AnalysisAPIView.as_view()),
     path('api/segmentation/labelme/', views.SegmentationLabelmeAPIView.as_view()),
-    path('datasets/', views.DatasetView.as_view()),
+    path('datasets/', views.DatasetView.as_view(), name='dataset_list'),
+    path('datasets/<int:pk>/', views.DatasetDetailView.as_view(), name='dataset_detail'),
 ]

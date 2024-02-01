@@ -274,7 +274,10 @@ class PredictionViewSet(viewsets.ModelViewSet):
 
 class DatasetView(ListView):
     model = models.Dataset
-    template_name = 'dataset.html'
 
     def get_queryset(self):
         return self.model.objects.filter(Q(owner=self.request.user) | Q(public=True))
+
+
+class DatasetDetailView(DetailView):
+    model = models.Dataset
