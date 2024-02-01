@@ -4,16 +4,6 @@
 
 {% block content %}
 {% for dataset in object_list %}
-<div class="card" style="width: 18rem;">
-  <!-- <img class="card-img-top" src="..." alt="Card image cap"> -->
-  <div class="card-body">
-    <h5 class="card-title">{{dataset.name}}</h5>
-    <p>Number of images: {{dataset.images.count}}</p>
-    <p>Description: {{dataset.description}}</p>
-    <p>Created at: {{dataset.created}}</p>
-    <p>Updated at: {{dataset.updated}}</p>
-    <p>Owner: {{dataset.owner}}</p>
-  </div>
-</div>
+{% include 'segmentation/components/dataset_card.html' with dataset=dataset %}
 {% endfor %}
 {% endblock content %}
