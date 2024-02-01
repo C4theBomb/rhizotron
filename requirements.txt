@@ -1,7 +1,6 @@
 aiohttp==3.9.1
 aiosignal==1.3.1
 asgiref==3.7.2
-async-timeout==4.0.3
 attrs==23.2.0
 autopep8==2.0.4
 blinker==1.7.0
@@ -12,13 +11,14 @@ Deprecated==1.2.14
 dextr==0.1.2
 Django==5.0.1
 django-appconf==1.0.5
+django-cleanup==8.1.0
 django-compressor==4.3.1
 django-filter==23.5
+django-htmx==1.17.2
 django-labeller==0.3.2
 django-libsass==0.9
 django-sass-processor==1.2.2
 djangorestframework==3.14.0
-djhtml==3.0.6
 drf-nested-routers==0.93.5
 drf-spectacular==0.27.1
 drf-spectacular-sidecar==2024.1.1
@@ -26,6 +26,7 @@ filelock==3.13.1
 Flask==3.0.1
 frozenlist==1.4.1
 fsspec==2023.12.2
+hashids==1.3.1
 idna==3.6
 imageio==2.33.1
 inflection==0.5.1
@@ -41,7 +42,6 @@ Markdown==3.5.2
 MarkupSafe==2.1.3
 mpmath==1.3.0
 multidict==6.0.4
-mysqlclient==2.2.1
 networkx==3.2.1
 numpy==1.26.3
 nvidia-cublas-cu12==12.1.3.1
@@ -73,7 +73,6 @@ scipy==1.12.0
 sqlparse==0.4.3
 sympy==1.12
 tifffile==2023.12.9
-tomli==2.0.1
 torch==2.1.2
 torchaudio==2.1.2
 torchmetrics==1.3.0

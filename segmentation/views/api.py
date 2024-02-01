@@ -122,6 +122,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def get_queryset(self):
+        if self.request.user.is_anonymous:
+            return self.queryset.filter(public=True)
+
         return self.queryset.filter(Q(owner=self.request.user) | Q(public=True))
 
 
@@ -270,14 +273,3 @@ class PredictionViewSet(viewsets.ModelViewSet):
             return serializers.LabelMeSerializer
         else:
             return self.serializer_class
-
-
-class DatasetView(ListView):
-    model = models.Dataset
-
-    def get_queryset(self):
-        return self.model.objects.filter(Q(owner=self.request.user) | Q(public=True))
-
-
-class DatasetDetailView(DetailView):
-    model = models.Dataset

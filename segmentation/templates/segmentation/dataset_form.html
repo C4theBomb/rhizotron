@@ -1,0 +1,11 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load sass_tags %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div><button class="btn btn-outline-info" type="submit">Create</button></div>
+</form>
+{% endblock content %}
