@@ -42,10 +42,10 @@ class PredictionSerializer(ModelSerializer):
 
     def create(self, validated_data):
         image = validated_data['image']
-        threshold = validated_data['threshold']
         mask = validated_data['mask']
+        threshold = validated_data['threshold']
 
-        return Prediction.objects.create(image=image, mask=mask, threshold=threshold,)
+        return Prediction.objects.create(image=image, mask=mask, threshold=threshold)
 
 
 class LabelMeSerializer(Serializer):
