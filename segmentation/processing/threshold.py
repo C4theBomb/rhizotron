@@ -15,10 +15,11 @@ def threshold_mask(mask: np.ndarray, threshold_area: int = 50) -> np.ndarray:
     """
 
     output_contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
-    hierarchy = hierarchy.squeeze(0)
 
     if len(output_contours) == 0:
         return mask
+
+    hierarchy = hierarchy.squeeze(0)
 
     threshold_contours = []
     threshold_heirarchy = []
