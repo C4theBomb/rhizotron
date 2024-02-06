@@ -144,6 +144,16 @@ class ImageViewSet(viewsets.ModelViewSet):
         serializer.save(dataset=dataset)
         return Response(serializer.data)
 
+    def bulk_destroy_images(self, request, dataset_pk=None):
+        images = models.Image.objects.filter(dataset=dataset_pk)
+        images.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def bulk_destroy_predictions(self, request, dataset_pk=None):
+        predictions = models.Prediction.objects.filter(image__dataset=dataset_pk)
+        predictions.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get_queryset(self):
         return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
 

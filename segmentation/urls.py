@@ -2,12 +2,13 @@ from django.urls import path
 from django.urls.conf import include
 from rest_framework_nested.routers import SimpleRouter, NestedSimpleRouter
 
+from segmentation.routers import ImageBulkRouter
 from . import views
 
 router = SimpleRouter()
 router.register('datasets', views.DatasetViewSet)
 
-images_router = NestedSimpleRouter(router, 'datasets', lookup='dataset')
+images_router = ImageBulkRouter(router, 'datasets', lookup='dataset')
 images_router.register('images', views.ImageViewSet)
 
 predictions_router = NestedSimpleRouter(images_router, 'images', lookup='image')
