@@ -1,5 +1,34 @@
-from rest_framework.serializers import Serializer, ModelSerializer, ImageField, FloatField, IntegerField, PrimaryKeyRelatedField, FileField
-from segmentation.models import Dataset, Image, Prediction
+from rest_framework.serializers import Serializer, ModelSerializer, ImageField, FloatField, IntegerField, PrimaryKeyRelatedField, FileField, CharField
+from segmentation.models import Dataset, Picture, Mask
+
+
+class DatasetSerializer(ModelSerializer):
+    images = PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Dataset
+        fields = '__all__'
+        read_only_fields = ['created', 'updated', 'owner']
+
+
+class PictureSerializer(ModelSerializer):
+    image = ImageField()
+
+    class Meta:
+        model = Picture
+        fields = '__all__'
+        read_only_fields = ['created', 'updated', 'dataset']
+
+
+class MaskSerializer(ModelSerializer):
+    class Meta:
+        model = Mask
+        fields = '__all__'
+        read_only_fields = ['created', 'updated', 'image', 'mask', 'picture']
+        write_only_fields = ['threshold']
+        extra_kwargs = {
+            'threshold': {'required': False, 'default': 0},
+        }
 
 
 class AnalysisSerializer(Serializer):
@@ -12,47 +41,17 @@ class SegmentationSerializer(Serializer):
     threshold = IntegerField(required=False, default=25)
 
 
-class DatasetSerializer(ModelSerializer):
-    images = PrimaryKeyRelatedField(many=True, read_only=True)
+class LabelMeSerializer(ModelSerializer):
+    json = FileField()
 
     class Meta:
-        model = Dataset
-        fields = '__all__'
-        read_only_fields = ['created', 'updated', 'owner']
-
-
-class ImageSerializer(ModelSerializer):
-    image = ImageField()
-
-    class Meta:
-        model = Image
-        fields = '__all__'
-        read_only_fields = ['created', 'updated', 'dataset']
-
-
-class PredictionSerializer(ModelSerializer):
-    class Meta:
-        model = Prediction
-        fields = '__all__'
-        read_only_fields = ['created', 'updated', 'image', 'mask']
-        write_only_fields = ['threshold']
+        model = Mask
+        fields = ['json']
+        read_only_fields = ['created', 'updated', 'image', 'mask', 'picture']
+        write_only_fields = ['json']
         extra_kwargs = {
-            'threshold': {'required': False, 'default': 0},
+            'json': {'required': True},
         }
 
     def create(self, validated_data):
-        image = validated_data['image']
-        mask = validated_data['mask']
-        threshold = validated_data['threshold']
-
-        return Prediction.objects.create(image=image, mask=mask, threshold=threshold)
-
-
-class LabelMeSerializer(Serializer):
-    json = FileField()
-
-    def create(self, validated_data):
-        image = validated_data['image']
-        mask = validated_data['mask']
-
-        return Prediction.objects.create(image=image, mask=mask, threshold=0)
+        return Mask.objects.create(image=validated_data['image'], picture=validated_data['picture'], threshold=0)

@@ -1,38 +1,51 @@
 import os
 
 from django.db import models
-from django.contrib.auth.models import User
-
-from django.db.models.signals import post_delete
 
 
 class Dataset(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
-    owner = models.ForeignKey(User, related_name='datasets', on_delete=models.CASCADE)
+    owner = models.ForeignKey('auth.User', related_name='datasets', on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     public = models.BooleanField(default=False)
 
 
 class Picture(models.Model):
-    dataset = models.ForeignKey(Dataset, related_name='pictures', on_delete=models.CASCADE)
+    dataset = models.ForeignKey('segmentation.Dataset', related_name='pictures', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='images/', editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    image = models.ImageField(upload_to='images/', editable=False)
 
     @property
     def filename(self):
         return os.path.basename(self.image.name)
 
+    @property
+    def file_basename(self):
+        return os.path.splitext(self.filename)[0]
+
+    @property
+    def owner(self):
+        return self.dataset.owner
+
 
 class Mask(models.Model):
-    image = models.OneToOneField(Picture, related_name='mask', on_delete=models.CASCADE)
-    mask = models.ImageField(upload_to='masks/', editable=False)
+    picture = models.OneToOneField('segmentation.Picture', related_name='mask', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='masks/', editable=False)
     threshold = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     @property
     def filename(self):
-        return os.path.basename(self.mask.name)
+        return os.path.basename(self.image.name)
+
+    @property
+    def file_basename(self):
+        return os.path.splitext(self.filename)[0]
+
+    @property
+    def owner(self):
+        return self.image.dataset.owner

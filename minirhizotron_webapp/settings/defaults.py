@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'core',
     'segmentation',
 
-    'django_cleanup'
+    'django_cleanup.apps.CleanupConfig',
 ]
 
 MIDDLEWARE = [
@@ -164,4 +164,5 @@ SPECTACULAR_SETTINGS = {
     'SWAGGER_UR_FAVICON_HREF': STATIC_URL + 'favicon.ico',
     'REDOC_DIST': 'SIDECAR',
     'REDOC_FAVICON_HREF': STATIC_URL + 'favicon.ico',
+    'COMPONENT_SPLIT_REQUEST': True,
 }

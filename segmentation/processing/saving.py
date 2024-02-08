@@ -2,8 +2,10 @@ import json
 import numpy as np
 import cv2
 
+from PIL import Image
 
-def labelme(image_filename: str, image: np.ndarray) -> str:
+
+def labelme(image_filename: str, image: Image.Image) -> str:
     """
     Convert an image with contours to a LabelMe JSON string.
 
@@ -14,6 +16,8 @@ def labelme(image_filename: str, image: np.ndarray) -> str:
     Returns:
         str: The LabelMe JSON string.
     """
+    image = np.array(image)
+
     contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
     shapes = []
     for contour in contours:
@@ -43,7 +47,7 @@ def labelme(image_filename: str, image: np.ndarray) -> str:
     return labelme_json
 
 
-def save_new_mask(image, mask_json) -> np.ndarray:
+def save_new_mask(image: Image.Image, mask_json: str) -> Image.Image:
     """
     Save a new mask from a LabelMe JSON string.
 
@@ -54,11 +58,15 @@ def save_new_mask(image, mask_json) -> np.ndarray:
         np.ndarray: The new mask.
     """
 
+    image = np.array(image)
+
     mask = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
     polygons = [shape['points'] for shape in mask_json['shapes']]
     for polygon in polygons:
         points = np.array(polygon, np.int32)
         points = points.reshape((-1, 1, 2))
         cv2.fillPoly(mask, [points], (255, 255, 255))
+
+    mask = Image.fromarray(mask)
 
     return mask
