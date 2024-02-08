@@ -4,11 +4,11 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 
-from segmentation import models
+from segmentation.models import Dataset, Picture, Mask
 
 
 class DatasetCreateView(CreateView):
-    model = models.Dataset
+    model = Dataset
     fields = ['name', 'description', 'public']
 
     def form_valid(self, form):
@@ -20,8 +20,8 @@ class DatasetCreateView(CreateView):
 
 
 class DatasetUpdateView(UpdateView):
-    model = models.Dataset
-    fields = ['name', 'description', 'public'] 
+    model = Dataset
+    fields = ['name', 'description', 'public']
 
     def get_queryset(self):
         return self.model.objects.filter(owner=self.request.user)
@@ -31,7 +31,7 @@ class DatasetUpdateView(UpdateView):
 
 
 class DatasetDeleteView(DeleteView):
-    model = models.Dataset
+    model = Dataset
 
     def get_queryset(self):
         return self.model.objects.filter(owner=self.request.user)
@@ -41,7 +41,7 @@ class DatasetDeleteView(DeleteView):
 
 
 class DatasetListView(ListView):
-    model = models.Dataset
+    model = Dataset
     ordering = ['-created']
     paginate_by = 5
 
@@ -53,29 +53,29 @@ class DatasetListView(ListView):
 
 
 class DatasetDetailView(DetailView):
-    model = models.Dataset
+    model = Dataset
 
 
 class ImagesListView(ListView):
-    model = models.Image
+    model = Picture
     ordering = ['-created']
     paginate_by = 5
 
     def get_queryset(self):
-        dataset = models.Dataset.objects.get(pk=self.kwargs['pk'])
+        dataset = Dataset.objects.get(pk=self.kwargs['pk'])
         return self.model.objects.filter(dataset=dataset)
 
 
 class ImageDetailView(DetailView):
-    model = models.Image
+    model = Picture
 
 
 class ImageCreateView(CreateView):
-    model = models.Image
+    model = Picture
     fields = ['name', 'description', 'image']
 
     def form_valid(self, form):
-        form.instance.dataset = models.Dataset.objects.get(pk=self.kwargs['dataset_pk'])
+        form.instance.dataset = Dataset.objects.get(pk=self.kwargs['dataset_pk'])
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -83,7 +83,7 @@ class ImageCreateView(CreateView):
 
 
 class ImageUpdateView(UpdateView):
-    model = models.Image
+    model = Picture
 
     def get_queryset(self):
         return self.model.objects.filter(dataset__owner=self.request.user)
@@ -93,7 +93,7 @@ class ImageUpdateView(UpdateView):
 
 
 class ImageDeleteView(DeleteView):
-    model = models.Image
+    model = Picture
 
     def get_queryset(self):
         return self.model.objects.filter(dataset__owner=self.request.user)

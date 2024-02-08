@@ -15,8 +15,8 @@ class Dataset(models.Model):
     public = models.BooleanField(default=False)
 
 
-class Image(models.Model):
-    dataset = models.ForeignKey(Dataset, related_name='images', on_delete=models.CASCADE)
+class Picture(models.Model):
+    dataset = models.ForeignKey(Dataset, related_name='pictures', on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     image = models.ImageField(upload_to='images/', editable=False)
@@ -26,8 +26,8 @@ class Image(models.Model):
         return os.path.basename(self.image.name)
 
 
-class Prediction(models.Model):
-    image = models.OneToOneField(Image, related_name='mask', on_delete=models.CASCADE)
+class Mask(models.Model):
+    image = models.OneToOneField(Picture, related_name='mask', on_delete=models.CASCADE)
     mask = models.ImageField(upload_to='masks/', editable=False)
     threshold = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
