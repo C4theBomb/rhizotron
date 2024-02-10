@@ -10,7 +10,7 @@ from django.core.files import File
 from rest_framework import generics, viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiResponse
 
 from segmentation.models import Dataset, Picture, Mask
 from segmentation.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
@@ -19,7 +19,15 @@ from segmentation.apps import SegmentationConfig
 
 
 @extend_schema(tags=['datasets'])
+@extend_schema_view(
+    list=extend_schema(summary='List all datasets'),
+    create=extend_schema(summary='Create a new dataset'),
+    retrieve=extend_schema(summary='Retrieve a dataset'),
+    partial_update=extend_schema(summary='Update a dataset'),
+    destroy=extend_schema(summary='Delete a dataset'),
+)
 class DatasetViewSet(viewsets.ModelViewSet):
+    queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     http_method_names = ['get', 'post', 'patch', 'delete']
@@ -30,21 +38,40 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save(owner=request.user)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         if self.request.user.is_anonymous:
-            return Dataset.objects.filter(public=True)
+            return self.queryset.filter(public=True)
 
-        return Dataset.objects.filter(Q(owner=self.request.user) | Q(public=True))
+        return self.queryset.filter(Q(owner=self.request.user) | Q(public=True))
 
 
 @extend_schema(tags=['pictures'])
+@extend_schema_view(
+    list=extend_schema(summary='List all images in a dataset'),
+    create=extend_schema(summary='Upload a new image'),
+    retrieve=extend_schema(summary='Retrieve an image'),
+    destroy=extend_schema(summary='Delete an image'),
+    bulk_predict=extend_schema(summary='Predict masks for multiple images'),
+)
 class PictureViewSet(viewsets.ModelViewSet):
+    queryset = Picture.objects.all()
     serializer_class = PictureSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     http_method_names = ['get', 'post', 'delete']
 
+    def create(self, request, dataset_pk=None):
+        dataset = Dataset.objects.get(pk=dataset_pk)
+
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(dataset=dataset)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(summary='Delete multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
     def bulk_destroy(self, request, dataset_pk=None, format=None):
         ids = [int(id) for id in request.query_params.get('ids').split(',')]
         images = self.queryset.filter(dataset=dataset_pk, id__in=ids)
@@ -56,37 +83,73 @@ class PictureViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['post'], url_path='predict')
+    @extend_schema(tags=['masks'], summary='Predict masks for multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)], responses={200: MaskSerializer(many=True)})
+    @action(detail=False, methods=['post'], url_path='predict', serializer_class=MaskSerializer)
     def bulk_predict(self, request, dataset_pk=None):
-        ids = [int(id) for id in request.query_params.get('ids').split(',')]
+        image_ids = request.query_params.get('ids')
 
+        if image_ids is None:
+            return Response({'detail': 'No image ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ids = [int(id) for id in image_ids.split(',')]
         images = self.queryset.filter(dataset=dataset_pk, id__in=ids)
+
+        if len(ids) != len(images):
+            return Response({'detail': 'Some images do not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
         for image in images:
             if hasattr(image, 'mask') and image.mask is not None:
                 return Response({'detail': 'Mask already exists for some images.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        area_threshold = request
+        area_threshold = request.data.get('threshold')
 
-    @action(detail=False, methods=['delete'], url_path='predict')
+        masks = []
+        for image in images:
+            mask = predict.predict(SegmentationConfig.model, image.image, area_threshold)
+
+            mask_byte_arr = io.BytesIO()
+            mask.save(mask_byte_arr, format='PNG')
+
+            mask = File(mask_byte_arr, name=f'{image.file_basename}_mask.png')
+            masks.append(Mask(image=image, mask=mask, threshold=area_threshold))
+
+        masks = Mask.objects.bulk_create(masks)
+
+        return Response(MaskSerializer(masks, many=True).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(tags=['masks'], summary='Delete predictions for multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
+    @bulk_predict.mapping.delete
     def bulk_destroy_predictions(self, request, dataset_pk=None):
-        ids = [int(id) for id in request.query_params.get('ids').split(',')]
+        image_ids = request.query_params.get('ids')
 
-        images = self.queryset.filter(dataset=dataset_pk, id__in=ids, prediction__isnull=False)
+        if image_ids is None:
+            return Response({'detail': 'No image ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ids = [int(id) for id in image_ids.split(',')]
+        images = self.queryset.filter(dataset=dataset_pk, id__in=ids, mask__isnull=False)
 
         if len(ids) != len(images):
-            return Response({'detail': 'Some images / predictions do not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Some images do not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        predictions = Mask.objects.filter(image__dataset=dataset_pk, image__id__in=ids)
+        predictions = Mask.objects.filter(picture__dataset=dataset_pk, picture__id__in=ids)
         predictions.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
-        return Picture.objects.filter(dataset=self.kwargs['dataset_pk'])
+        return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
 
 
 @extend_schema(tags=['masks'])
+@extend_schema_view(
+    list=extend_schema(summary='List all predictions for an image'),
+    create=extend_schema(summary='Predict a mask for an image'),
+    retrieve=extend_schema(summary='Retrieve a prediction'),
+    partial_update=extend_schema(summary='Update a prediction'),
+    destroy=extend_schema(summary='Delete a prediction'),
+    create_label_me=extend_schema(summary='Create a mask using LabelMe'),
+    export_label_me=extend_schema(summary='Export a mask to LabelMe'),
+)
 class MaskViewSet(viewsets.ModelViewSet):
     serializer_class = MaskSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -94,13 +157,13 @@ class MaskViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'delete', 'patch']
 
     def list(self, request, dataset_pk=None, image_pk=None):
-        queryset = self.queryset.filter(image=image_pk)
+        queryset = self.queryset.filter(picture=image_pk)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, dataset_pk=None, image_pk=None):
-        original = Image.objects.get(pk=image_pk)
+        original = Picture.objects.get(pk=image_pk)
 
         if hasattr(original, 'mask') and original.mask is not None:
             return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -116,56 +179,35 @@ class MaskViewSet(viewsets.ModelViewSet):
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
 
-        mask = File(mask_byte_arr, name=f'{original.image.name.split(".")[0]}_mask.png')
+        mask = File(mask_byte_arr, name=original.filename)
         serializer.save(image=original, mask=mask)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, dataset_pk=None, image_pk=None, pk=None):
-        prediction = Mask.objects.get(pk=pk)
-        serializer = self.get_serializer(prediction, data=request.data, partial=True)
+        original_mask = Mask.objects.get(pk=pk)
+        serializer = self.get_serializer(original_mask, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict.predict(SegmentationConfig.model, prediction.image.image, area_threshold)
+        image = predict.predict(SegmentationConfig.model, original_mask.image.image, area_threshold)
 
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
-        mask = File(mask_byte_arr, name=f'{prediction.image.image.name.split(".")[0]}_mask.png')
+        mask = File(mask_byte_arr, name=mask.filename)
 
-        serializer.save(image=prediction.image, mask=mask)
-        return Response(serializer.data)
+        serializer.save(image=original_mask.image, mask=mask)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'], url_path='labelme')
-    def export_label_me(self, request, dataset_pk=None, image_pk=None, pk=None):
-        prediction = Mask.objects.get(pk=pk)
-
-        image = Image.open(prediction.image.image)
-        mask = Image.open(prediction.mask)
-
-        labelme_data = saving.labelme(prediction.mask.name, mask)
-
-        outfile = io.BytesIO()
-        with zipfile.ZipFile(outfile, 'w') as zf:
-            with zf.open('labelme.json', 'w') as f:
-                f.write(labelme_data.encode('utf-8'))
-
-            with zf.open(os.path.basename(prediction.image.image.name), 'w') as f:
-                image.save(f, format='PNG')
-
-        response = HttpResponse(outfile.getvalue(), content_type='application/octet=stream')
-        response['Content-Disposition'] = f'attachment; filename={prediction.mask.name.split(".")[0]}_labelme.zip'
-
-        return response
-
-    @action(detail=False, methods=['post'], url_path='labelme', serializer_class=LabelMeSerializer)
+    @extend_schema(request=LabelMeSerializer, responses={200: MaskSerializer})
+    @action(detail=False, methods=['post'], url_path='labelme')
     def create_label_me(self, request, dataset_pk=None, image_pk=None):
         serializer = self.get_serializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        original = Image.objects.get(pk=image_pk)
+        original = Picture.objects.get(pk=image_pk)
 
         if hasattr(original, 'mask') and original.mask is not None:
             return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -177,75 +219,40 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         mask_byte_arr = io.BytesIO()
         mask.save(mask_byte_arr, format='PNG')
-        mask = File(mask_byte_arr, name=f'{original.image.name.split(".")[0]}_mask.png')
+        mask = File(mask_byte_arr, name=original.filename)
 
-        serializer.save(image=original, mask=mask)
+        instance = serializer.save(picture=original, image=mask)
+        instance_serializer = MaskSerializer(instance)
 
-        return HttpResponse(labelme_data, content_type='application/json')
+        return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY})
+    @action(detail=True, methods=['get'], url_path='labelme')
+    def export_label_me(self, request, dataset_pk=None, image_pk=None, pk=None):
+        prediction = Mask.objects.get(pk=pk)
 
-# class SegmentationAPIView(generics.GenericAPIView):
-#     permission_classes = [permissions.AllowAny]
-#     serializer_class = serializers.SegmentationSerializer
+        image = Image.open(prediction.picture.image)
+        mask = Image.open(prediction.image)
 
-#     def post(self, request):
-#         serializer = self.get_serializer(data=request.data)
+        labelme_data = saving.labelme(prediction.picture.filename, mask)
 
-#         if not serializer.is_valid():
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        outfile = io.BytesIO()
+        with zipfile.ZipFile(outfile, 'w') as zf:
+            with zf.open('labelme.json', 'w') as f:
+                f.write(labelme_data.encode('utf-8'))
 
-#         image = serializer.validated_data['image']
-#         area_threshold = serializer.validated_data['threshold']
+            with zf.open(os.path.basename(prediction.picture.filename), 'w') as f:
+                image.save(f, format='PNG')
 
-#         image = predict.predict(SegmentationConfig.model, io.BytesIO(image.read()), area_threshold)
+        response = HttpResponse(outfile.getvalue(), content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename={prediction.picture.file_basename}_labelme.zip'
 
-#         img_byte_arr = io.BytesIO()
-#         image.save(img_byte_arr, format='PNG')
+        return response
 
-#         return HttpResponse(img_byte_arr.getvalue(), content_type='image/png')
+    def get_queryset(self):
+        return self.queryset.filter(image=self.kwargs['image_pk'])
 
-
-# class SegmentationLabelmeAPIView(generics.GenericAPIView):
-#     permission_classes = [permissions.AllowAny]
-#     serializer_class = serializers.SegmentationSerializer
-
-#     def post(self, request):
-#         serializer = self.get_serializer(data=request.data)
-
-#         if not serializer.is_valid():
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         image = serializer.validated_data['image']
-#         area_threshold = serializer.validated_data['threshold']
-#         filename = image.name
-
-#         image = Image.open(io.BytesIO(image.read()))
-
-#         image = predict.predict(SegmentationConfig.model, image, area_threshold)
-
-#         labelme_data = saving.labelme(filename, image)
-
-#         return HttpResponse(labelme_data, content_type='application/json')
-
-
-# class AnalysisAPIView(generics.GenericAPIView):
-#     permission_classes = [permissions.AllowAny]
-#     serializer_class = serializers.AnalysisSerializer
-
-#     def post(self, request):
-#         serializer = self.get_serializer(data=request.data)
-
-#         if not serializer.is_valid():
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#         image = serializer.validated_data['image']
-#         scaling_factor = serializer.validated_data['scaling_factor']
-#         image = Image.open(io.BytesIO(image.read()))
-
-#         return Response({
-#             'root_count': root_analysis.find_root_count(image),
-#             'root_diameter': root_analysis.find_root_diameter(image, scaling_factor),
-#             'total_root_area': root_analysis.find_total_root_area(image, scaling_factor),
-#             'total_root_length': root_analysis.find_total_root_length(image, scaling_factor),
-#             'total_root_volume': root_analysis.find_total_root_volume(image, scaling_factor),
-#         }, content_type='application/json')
+    def get_serializer_class(self):
+        if self.action == 'create_label_me':
+            return LabelMeSerializer
+        return MaskSerializer

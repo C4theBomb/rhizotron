@@ -19,7 +19,9 @@ app_name = 'segmentation'
 urlpatterns = [
     path('api/', include(dataset_router.urls)),
     path('api/', include(image_router.urls)),
-    # path('api/', include(mask_router.urls)),
+    path('api/', include(mask_router.urls)),
+
+
     # path('api/segmentation/', views.SegmentationAPIView.as_view()),
     # path('api/segmentation/analysis/', views.AnalysisAPIView.as_view()),
     # path('api/segmentation/labelme/', views.SegmentationLabelmeAPIView.as_view()),
