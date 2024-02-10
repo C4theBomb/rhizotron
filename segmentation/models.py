@@ -30,6 +30,10 @@ class Picture(models.Model):
     def owner(self):
         return self.dataset.owner
 
+    @property
+    def public(self):
+        return self.dataset.public
+
 
 class Mask(models.Model):
     picture = models.OneToOneField('segmentation.Picture', related_name='mask', on_delete=models.CASCADE)
@@ -48,4 +52,8 @@ class Mask(models.Model):
 
     @property
     def owner(self):
-        return self.image.dataset.owner
+        return self.picture.owner
+
+    @property
+    def public(self):
+        return self.picture.public
