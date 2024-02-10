@@ -15,6 +15,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from segmentation.models import Dataset, Picture, Mask
 from segmentation.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
 from segmentation.processing import root_analysis, saving, predict
+from segmentation.permissions import IsOwnerOrReadOnly
 from segmentation.apps import SegmentationConfig
 
 
@@ -29,7 +30,7 @@ from segmentation.apps import SegmentationConfig
 class DatasetViewSet(viewsets.ModelViewSet):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def create(self, request):
@@ -58,7 +59,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
 class PictureViewSet(viewsets.ModelViewSet):
     queryset = Picture.objects.all()
     serializer_class = PictureSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     http_method_names = ['get', 'post', 'delete']
 
     def create(self, request, dataset_pk=None):
@@ -152,7 +153,7 @@ class PictureViewSet(viewsets.ModelViewSet):
 )
 class MaskViewSet(viewsets.ModelViewSet):
     serializer_class = MaskSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     queryset = Mask.objects.all()
     http_method_names = ['get', 'post', 'delete', 'patch']
 
