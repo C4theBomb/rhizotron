@@ -1,9 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,virtualenv,python,django,git
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,virtualenv,python,django,git
 
+
 processing/data/*
 processing/checkpoints
-processing/outputs
+processing/output
 processing/logs
 
 !processing/data/*.py

@@ -7,16 +7,17 @@ from PIL import Image
 from django.http import HttpResponse
 from django.db.models import Q
 from django.core.files import File
-from rest_framework import generics, viewsets, permissions, status
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiResponse
 
 from segmentation.models import Dataset, Picture, Mask
 from segmentation.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
-from segmentation.processing import root_analysis, saving, predict
 from segmentation.permissions import IsOwnerOrReadOnly
 from segmentation.apps import SegmentationConfig
+
+from processing import calculate_metrics, saving
 
 
 @extend_schema(tags=['datasets'])
