@@ -9,19 +9,18 @@ from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from torchvision.transforms.v2 import functional as F
 
+from processing.utils.file_management import get_image_filenames
+
 
 class LabelmeDataset(Dataset):
-    def __init__(self, img_dir, mask_dir, min_zoom=0.5, grayscale_mask=True):
-        self.img_dir = img_dir
-        self.mask_dir = mask_dir
+    def __init__(self, dataset_dir, min_zoom=0.5, grayscale_mask=True):
         self.transform = v2.Compose([
             v2.RandomResizedCrop(400, scale=(min_zoom, 1.0), ratio=(1, 1), antialias=None),
             v2.RandomHorizontalFlip(p=0.5),
             v2.RandomVerticalFlip(p=0.5)
         ])
         self.grayscale_mask = grayscale_mask
-        self.img_filenames = [os.path.join(
-            img_dir, file) for file in os.listdir(img_dir)]
+        self.img_filenames = get_image_filenames(dataset_dir, recursive=True)
 
     def __len__(self):
         return len(self.img_filenames)
