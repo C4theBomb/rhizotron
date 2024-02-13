@@ -1,6 +1,13 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,virtualenv,python,django,git
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,virtualenv,python,django,git
 
+processing/data/*
+processing/checkpoints
+processing/outputs
+processing/logs
+
+!processing/data/*.py
+
 ### Django ###
 *.log
 *.pot
@@ -310,4 +317,3 @@ pip-selfcheck.json
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,virtualenv,python,django,git
-
