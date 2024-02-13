@@ -17,11 +17,11 @@ def main(args):
 
     model.load_state_dict(model_weights)
     model.eval()
-    torch.save(model, Path(args.output, f'{args.model}_{args.name}_{args.version}.pth'))
+
+    torch.save(model.state_dict(), Path(args.output, f'{args.model}_{args.name}_{args.version}.pth'))
 
 
 if __name__ == "__main__":
-
     Path('logs').mkdir(parents=True, exist_ok=True)
 
     logging.basicConfig(

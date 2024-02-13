@@ -2,7 +2,8 @@ import io
 import os
 import zipfile
 import json
-from PIL import Image
+from PIL import Image as PILImage
+import numpy as np
 
 from django.http import HttpResponse
 from django.db.models import Q
@@ -16,8 +17,7 @@ from segmentation.models import Dataset, Picture, Mask
 from segmentation.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
 from segmentation.permissions import IsOwnerOrReadOnly
 from segmentation.apps import SegmentationConfig
-
-from processing import calculate_metrics, saving
+from processing import predict, masks
 
 
 @extend_schema(tags=['datasets'])
@@ -107,7 +107,7 @@ class PictureViewSet(viewsets.ModelViewSet):
 
         masks = []
         for image in images:
-            mask = predict.predict(SegmentationConfig.model, image.image, area_threshold)
+            mask = predict(SegmentationConfig.model, image.image, area_threshold)
 
             mask_byte_arr = io.BytesIO()
             mask.save(mask_byte_arr, format='PNG')
@@ -176,7 +176,7 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict.predict(SegmentationConfig.model, original.image, area_threshold)
+        image = predict(SegmentationConfig.model, original.image, area_threshold)
 
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
@@ -193,7 +193,7 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict.predict(SegmentationConfig.model, original_mask.image.image, area_threshold)
+        image = predict(SegmentationConfig.model, original_mask.image.image, area_threshold)
 
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
@@ -214,10 +214,10 @@ class MaskViewSet(viewsets.ModelViewSet):
         if hasattr(original, 'mask') and original.mask is not None:
             return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        image = Image.open(original.image)
+        image = PILImage.open(original.image)
         labelme_data = json.loads(serializer.validated_data['json'].read().decode('utf-8'))
 
-        mask = saving.save_new_mask(image, labelme_data)
+        mask = masks.from_labelme(np.array(image), labelme_data)
 
         mask_byte_arr = io.BytesIO()
         mask.save(mask_byte_arr, format='PNG')
@@ -233,10 +233,10 @@ class MaskViewSet(viewsets.ModelViewSet):
     def export_label_me(self, request, dataset_pk=None, image_pk=None, pk=None):
         prediction = Mask.objects.get(pk=pk)
 
-        image = Image.open(prediction.picture.image)
-        mask = Image.open(prediction.image)
+        image = PILImage.open(prediction.picture.image)
+        mask = PILImage.open(prediction.image)
 
-        labelme_data = saving.labelme(prediction.picture.filename, mask)
+        labelme_data = masks.from_labelme(prediction.picture.filename, np.array(mask))
 
         outfile = io.BytesIO()
         with zipfile.ZipFile(outfile, 'w') as zf:
