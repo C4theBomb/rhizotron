@@ -11,7 +11,7 @@ from django.core.files import File
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiResponse
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
 from segmentation.models import Dataset, Picture, Mask
 from segmentation.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
@@ -103,7 +103,7 @@ class PictureViewSet(viewsets.ModelViewSet):
             if hasattr(image, 'mask') and image.mask is not None:
                 return Response({'detail': 'Mask already exists for some images.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        area_threshold = request.data.get('threshold')
+        area_threshold = int(request.data.get('threshold', 0))
 
         masks = []
         for image in images:
@@ -113,7 +113,7 @@ class PictureViewSet(viewsets.ModelViewSet):
             mask.save(mask_byte_arr, format='PNG')
 
             mask = File(mask_byte_arr, name=f'{image.file_basename}_mask.png')
-            masks.append(Mask(image=image, mask=mask, threshold=area_threshold))
+            masks.append(Mask(picture=image, image=mask, threshold=area_threshold))
 
         masks = Mask.objects.bulk_create(masks)
 
@@ -182,24 +182,28 @@ class MaskViewSet(viewsets.ModelViewSet):
         image.save(mask_byte_arr, format='PNG')
 
         mask = File(mask_byte_arr, name=original.filename)
-        serializer.save(image=original, mask=mask)
+        serializer.save(picture=original, image=mask)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request, dataset_pk=None, image_pk=None, pk=None):
         original_mask = Mask.objects.get(pk=pk)
-        serializer = self.get_serializer(original_mask, data=request.data, partial=True)
+
+        serializer = self.get_serializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict(SegmentationConfig.model, original_mask.image.image, area_threshold)
-
+        image = predict(SegmentationConfig.model, original_mask.picture.image, area_threshold)
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
-        mask = File(mask_byte_arr, name=mask.filename)
 
-        serializer.save(image=original_mask.image, mask=mask)
+        original_mask.image = File(mask_byte_arr)
+        original_mask.threshold = area_threshold
+        new_mask = original_mask.save()
+
+        serializer = self.get_serializer(new_mask)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(request=LabelMeSerializer, responses={200: MaskSerializer})
@@ -252,7 +256,7 @@ class MaskViewSet(viewsets.ModelViewSet):
         return response
 
     def get_queryset(self):
-        return self.queryset.filter(image=self.kwargs['image_pk'])
+        return self.queryset.filter(picture=self.kwargs['image_pk'])
 
     def get_serializer_class(self):
         if self.action == 'create_label_me':
