@@ -3,12 +3,12 @@ from segmentation.models import Dataset, Picture, Mask
 
 
 class DatasetSerializer(ModelSerializer):
-    images = PrimaryKeyRelatedField(many=True, read_only=True)
+    pictures = PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Dataset
         fields = '__all__'
-        read_only_fields = ['created', 'updated', 'owner']
+        read_only_fields = ['created', 'updated', 'owner', 'pictures']
 
 
 class PictureSerializer(ModelSerializer):
