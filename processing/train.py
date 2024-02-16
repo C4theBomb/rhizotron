@@ -53,7 +53,7 @@ class TrainingDataModule(L.LightningDataModule):
 
 @log_function
 def load_danforth_dataset():
-    dataset = LabelmeDataset('data/danforth/images', 'data/danforth/masks')
+    dataset = LabelmeDataset('data/danforth')
     train_dataset, val_dataset, test_dataset = random_split(
         dataset, [0.80, 0.15, 0.05], generator=Generator().manual_seed(0))
 
@@ -100,7 +100,7 @@ def main(args):
     logging.info(f'Using device: {device}')
 
     if args.model == 'unet':
-        model = TrainingModel(UNet, learning_rate=args.learning_rate)
+        model = TrainingModel(UNet, learning_rate=args.learning_rate, dropout=args.dropout)
 
     if args.dataset == 'danforth':
         train_dataset, val_dataset, test_dataset = load_danforth_dataset()
@@ -114,7 +114,7 @@ def main(args):
         accelerator='gpu' if device.type == 'cuda' else 'cpu',
         max_epochs=args.epochs,
         log_every_n_steps=1,
-        precision='bf16-mixed',
+        precision='bf16-mixed' if device.type == 'cuda' else None,
         logger=TensorBoardLogger(save_dir=f'logs/{args.model_dir}'),
         profiler=SimpleProfiler(dirpath=f'logs/{args.model_dir}/profiler', filename='perf_logs'),
         callbacks=[
@@ -157,6 +157,9 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='danforth', choices=['danforth', 'prmi'], help='Dataset to use')
 
     parser.add_argument('--learning_rate', type=float, default=1e-2, help='Learning rate')
+    parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate')
+    # parser.add_argument('--min_zoom', type=float, default=0.5, help='Minimum zoom for random resized crop')
+
     parser.add_argument('--prefetch_factor', type=int, default=2, help='Prefetch factor')
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--epochs', type=int, default=5000, help='Number of epochs')

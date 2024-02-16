@@ -6,12 +6,12 @@ from .metrics import Dice, Accuracy
 
 
 class TrainingModel(L.LightningModule):
-    def __init__(self, model, learning_rate=1e-1):
+    def __init__(self, model, learning_rate=1e-1, dropout=0.2):
         super().__init__()
 
         self.learning_rate = learning_rate
 
-        self.model = model(3, 1)
+        self.model = model(3, 1, dropout=dropout)
         self.loss = Dice()
         self.accuracy = Accuracy()
 

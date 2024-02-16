@@ -23,7 +23,7 @@ class CNNBlock(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1):
+    def __init__(self, in_channels=3, out_channels=1, dropout=0.2):
         super().__init__()
         self.down_step1 = CNNBlock(in_channels, 64)
         self.down_step2 = CNNBlock(64, 128)
