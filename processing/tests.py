@@ -14,8 +14,8 @@ import tempfile
 from urllib.parse import urlparse
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from segmentation.models import Dataset, Picture, Mask
-from segmentation.views import DatasetViewSet, PictureViewSet, MaskViewSet
+from processing.models import Dataset, Picture, Mask
+from processing.views import DatasetViewSet, PictureViewSet, MaskViewSet
 
 MEDIA_ROOT = tempfile.mkdtemp()
 

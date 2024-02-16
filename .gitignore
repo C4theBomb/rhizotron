@@ -2,12 +2,12 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,virtualenv,python,django,git
 
 
-processing/data/*
-processing/checkpoints
-processing/output
-processing/logs
+segmentation/data/*
+segmentation/checkpoints
+segmentation/output
+segmentation/logs
 
-!processing/data/*.py
+!segmentation/data/*.py
 
 ### Django ###
 *.log

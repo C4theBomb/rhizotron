@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 
-from segmentation.models import Dataset, Picture, Mask
+from processing.models import Dataset, Picture, Mask
 
 
 class DatasetCreateView(CreateView):

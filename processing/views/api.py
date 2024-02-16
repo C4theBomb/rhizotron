@@ -13,11 +13,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
-from segmentation.models import Dataset, Picture, Mask
-from segmentation.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
-from segmentation.permissions import IsOwnerOrReadOnly
-from segmentation.apps import SegmentationConfig
-from processing import predict, masks
+from processing.models import Dataset, Picture, Mask
+from processing.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
+from processing.permissions import IsOwnerOrReadOnly
+from processing.apps import ProcessingConfig
+from segmentation import predict, masks
 
 
 @extend_schema(tags=['datasets'])
@@ -107,7 +107,7 @@ class PictureViewSet(viewsets.ModelViewSet):
 
         masks = []
         for image in images:
-            mask = predict(SegmentationConfig.model, image.image, area_threshold)
+            mask = predict(ProcessingConfig.model, image.image, area_threshold)
 
             mask_byte_arr = io.BytesIO()
             mask.save(mask_byte_arr, format='PNG')
@@ -176,7 +176,7 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict(SegmentationConfig.model, original.image, area_threshold)
+        image = predict(ProcessingConfig.model, original.image, area_threshold)
 
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
@@ -194,7 +194,7 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict(SegmentationConfig.model, original_mask.picture.image, area_threshold)
+        image = predict(ProcessingConfig.model, original_mask.picture.image, area_threshold)
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
 

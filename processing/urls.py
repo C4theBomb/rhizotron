@@ -2,7 +2,7 @@ from django.urls import path
 from django.urls.conf import include
 from rest_framework_nested.routers import SimpleRouter, NestedSimpleRouter
 
-from segmentation.routers import BulkNestedRouter
+from processing.routers import BulkNestedRouter
 from . import views
 
 dataset_router = SimpleRouter()

@@ -1,5 +1,5 @@
 from rest_framework.serializers import Serializer, ModelSerializer, ImageField, FloatField, IntegerField, PrimaryKeyRelatedField, FileField, CharField
-from segmentation.models import Dataset, Picture, Mask
+from processing.models import Dataset, Picture, Mask
 
 
 class DatasetSerializer(ModelSerializer):

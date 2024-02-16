@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from segmentation.models import Dataset, Picture, Mask
+from processing.models import Dataset, Picture, Mask
 
 # Register your models here.
 admin.site.register(Dataset)

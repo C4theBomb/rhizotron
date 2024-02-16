@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torchvision.transforms import v2
 from torchvision.transforms.v2 import functional as F
 
-from utils.file_management import get_image_filenames
+from segmentation.utils.file_management import get_image_filenames
 
 
 class LabelmeDataset(Dataset):

@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'django_htmx',
 
     'core',
-    'segmentation',
+    'processing',
 
     'django_cleanup.apps.CleanupConfig',
 ]

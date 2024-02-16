@@ -13,7 +13,7 @@ class Dataset(models.Model):
 
 
 class Picture(models.Model):
-    dataset = models.ForeignKey('segmentation.Dataset', related_name='pictures', on_delete=models.CASCADE)
+    dataset = models.ForeignKey('processing.Dataset', related_name='pictures', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='images/', editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -36,7 +36,7 @@ class Picture(models.Model):
 
 
 class Mask(models.Model):
-    picture = models.OneToOneField('segmentation.Picture', related_name='mask', on_delete=models.CASCADE)
+    picture = models.OneToOneField('processing.Picture', related_name='mask', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='masks/', editable=False)
     threshold = models.IntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True)
