@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 
     'core',
     'processing',
+    'segmentation',
 
     'django_cleanup.apps.CleanupConfig',
 ]
