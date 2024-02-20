@@ -1,24 +1,42 @@
+from enum import Enum
+
+import torch
 from torch.optim import Adam
 
 import lightning as L
 
 from .metrics import Dice, Accuracy
+from .unet import UNet
 
+class ModelType(Enum):
+    UNET = UNet
+    
+    def __str__(self) -> str:
+        return self.value.__name__.lower()
+
+    @staticmethod
+    def from_string(s: str) -> 'ModelType':
+        match s.lower():
+            case 'unet':
+                return ModelType.UNET
+            case _:
+                raise ValueError(f'Invalid model type: {s}')
 
 class TrainingModel(L.LightningModule):
-    def __init__(self, model, learning_rate=1e-1, dropout=0.2):
+    def __init__(self, model_type: ModelType, learning_rate: float = 1e-1, dropout: float = 0.2):
         super().__init__()
 
         self.learning_rate = learning_rate
+        
+        self.model = model_type.value(3, 1, dropout=dropout)
 
-        self.model = model(3, 1, dropout=dropout)
         self.loss = Dice()
         self.accuracy = Accuracy()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
-    def run_step(self, batch):
+    def run_step(self, batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         x, y = batch['image'], batch['mask']
         y_pred = self.forward(x)
         loss = 1 - self.loss(y, y_pred)
@@ -26,7 +44,7 @@ class TrainingModel(L.LightningModule):
 
         return loss, accuracy
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: torch.Tensor) -> torch.Tensor:
         loss, accuracy = self.run_step(batch)
 
         self.log('train_accuracy', accuracy, prog_bar=True)
@@ -34,7 +52,7 @@ class TrainingModel(L.LightningModule):
 
         return loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: torch.Tensor) -> torch.Tensor:
         loss, accuracy = self.run_step(batch)
 
         self.log('val_accuracy', accuracy, prog_bar=True)
@@ -42,7 +60,7 @@ class TrainingModel(L.LightningModule):
 
         return loss
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch: torch.Tensor) -> torch.Tensor:
         loss, accuracy = self.run_step(batch)
 
         self.log('test_accuracy', accuracy, prog_bar=True)
@@ -50,10 +68,10 @@ class TrainingModel(L.LightningModule):
 
         return loss
 
-    def predict_step(self, batch):
+    def predict_step(self, batch: torch.Tensor) -> torch.Tensor:
         x, y = batch['image'], batch['mask']
         return self.forward(x)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         optimizer = Adam(self.model.parameters(), lr=self.learning_rate)
         return optimizer

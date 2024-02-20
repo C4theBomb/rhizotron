@@ -1,1 +1,1 @@
-from minirhizotron_webapp.settings.dev import *
+from minirhizotron_webapp.settings.local import *

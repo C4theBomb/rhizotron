@@ -1,31 +1,26 @@
 import os
 import logging
-
+import cv2
 import numpy as np
 import pandas as pd
-import cv2
+
+from django.core.management.base import BaseCommand, CommandParser
 
 from segmentation.utils import file_management
 
-from django.core.management.base import BaseCommand
-
-
 class Command(BaseCommand):
-    help = 'Build composites from images'
+    help = 'Combine images of individual layers into composite images.'
 
     def __init__(self):
-        if not os.path.exists('logs'):
-            os.makedirs('logs')
-
         self.logger = logging.getLogger('main')
 
-    def add_arguments(self, parser):
-        parser.add_argument('--target', type=str, default=None, help='Target directory')
-        parser.add_argument('--output', type=str, default='output', help='Output directory')
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument('target', type=str, help='Target directory')
+        parser.add_argument('--output', type=str, default='segmentation/output', help='Output directory')
         parser.add_argument('--recursive', action='store_true', help='Recursively search for images')
 
-    def handle(self, *args, **options):
-        image_filepaths = file_management.get_image_filenames(args.target, args.recursive)
+    def handle(self, *args, **options) -> None:
+        image_filepaths = file_management.get_image_filenames(options['target'], options['recursive'])
 
         df = pd.DataFrame([], columns=['Date', 'DPI', 'Tube', 'Level', 'Path'])
 
@@ -61,18 +56,16 @@ class Command(BaseCommand):
 
             image = np.concatenate(images, axis=1)
 
-            if args.output == 'output':
+            if options['output'] == 'output':
                 if not os.path.exists(f'./output/concatenated/{name[0].strftime("%m%d%Y")}'):
                     os.makedirs(f'./output/concatenated/{name[0].strftime("%m%d%Y")}')
                 cv2.imwrite(
                     f'./output/concatenated/{name[0].strftime("%m%d%Y")}/CS_T{name[1]}_L{min_level}-{max_level}.png', image)
             else:
-                if not os.path.exists(f'{args.output}/{name[0].strftime("%m%d%Y")}'):
-                    os.makedirs(f'{args.output}/{name[0].strftime("%m%d%Y")}')
+                if not os.path.exists(f'{options['output']}/{name[0].strftime("%m%d%Y")}'):
+                    os.makedirs(f'{options['output']}/{name[0].strftime("%m%d%Y")}')
                 cv2.imwrite(
-                    f'{args.output}/{name[0].strftime("%m%d%Y")}/CS_T{name[1]}_L{min_level}-{max_level}.png', image)
+                    f'{options['output']}/{name[0].strftime("%m%d%Y")}/CS_T{name[1]}_L{min_level}-{max_level}.png', image)
 
             self.logger.info(
                 f'Completed image {group_index + 1} of {len(groups)}: {name[0].strftime("%m%d%Y")}, Tube {name[1]}')
-
-        self.logger.info('Finished running script')

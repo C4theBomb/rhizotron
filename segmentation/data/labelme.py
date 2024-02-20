@@ -13,7 +13,7 @@ from segmentation.utils.file_management import get_image_filenames
 
 
 class LabelmeDataset(Dataset):
-    def __init__(self, dataset_dir, min_zoom=0.5, grayscale_mask=True):
+    def __init__(self, dataset_dir: str, min_zoom: float = 0.5, grayscale_mask: bool = True):
         self.transform = v2.Compose([
             v2.RandomResizedCrop(400, scale=(min_zoom, 1.0), ratio=(1, 1), antialias=None),
             v2.RandomHorizontalFlip(p=0.5),
@@ -22,10 +22,10 @@ class LabelmeDataset(Dataset):
         self.grayscale_mask = grayscale_mask
         self.img_filenames = get_image_filenames(dataset_dir, recursive=True)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.img_filenames)
 
-    def get_image(self, filename):
+    def get_image(self, filename: str) -> np.ndarray:
         image = cv2.imread(filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -33,7 +33,7 @@ class LabelmeDataset(Dataset):
 
         return image
 
-    def get_mask(self, filename, shape=(755, 850, 3)):
+    def get_mask(self, filename: str, shape: tuple = (755, 850, 3)) -> np.ndarray:
         mask = np.zeros(shape, dtype=np.uint8)
         mask_json_filename = filename.replace(
             'images', 'masks').replace('.PNG', '.json')
@@ -47,7 +47,7 @@ class LabelmeDataset(Dataset):
 
         return mask
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> dict[str, torch.Tensor]:
         image = self.get_image(self.img_filenames[index])
         mask = self.get_mask(self.img_filenames[index], image.shape)
 

@@ -1,2 +1,1 @@
-from .labelme import LabelmeDataset
-from .prmi import PRMIDataset
+from .data_module import TrainingDataModule, DatasetType

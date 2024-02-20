@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64/v8
+    image: c4thebomb/minirhizotron-webapp:${TAG:-latest}
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - 127.0.0.1:8000:8000
+    networks:
+      - housewars
+      - common-network
+    external_links:
+      - mysqldb
+
+networks:
+  common-network:
+    external: true
+  minirhizotron-webapp: {}

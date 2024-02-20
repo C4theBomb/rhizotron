@@ -6,7 +6,7 @@ class Accuracy(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, y_true, y_pred, tolerance=1e-2):
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor, tolerance: float = 1e-2) -> torch.Tensor:
         y_pred = torch.flatten(y_pred)
         y_true = torch.flatten(y_true)
 
@@ -17,7 +17,7 @@ class Dice(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, y_true, y_pred, smooth=1e-5):
+    def forward(self, y_true: torch.Tensor, y_pred: torch.Tensor, smooth: float = 1e-5) -> torch.Tensor:
         y_pred = torch.flatten(y_pred)
         y_true = torch.flatten(y_true)
 

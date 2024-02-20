@@ -1,7 +1,7 @@
 import os
 
 
-def get_image_filenames(directory, recursive=False):
+def get_image_filenames(directory: str, recursive: bool = False):
     image_filenames = []
 
     if recursive:

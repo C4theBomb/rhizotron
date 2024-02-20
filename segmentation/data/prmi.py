@@ -23,7 +23,7 @@ class PRMIDataset(Dataset):
         self.grayscale_mask = grayscale_mask
         self.img_filenames = self.get_all_filenames()
 
-    def get_all_filenames(self):
+    def get_all_filenames(self) -> list:
         all_files = []
         for root, _, files in os.walk(self.img_dir):
             filenames = [os.path.join(root, file) for file in files]
@@ -31,22 +31,22 @@ class PRMIDataset(Dataset):
 
         return all_files
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.img_filenames)
 
-    def get_image(self, filename):
+    def get_image(self, filename) -> np.ndarray:
         image = cv2.imread(filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def get_mask(self, filename):
+    def get_mask(self, filename) -> np.ndarray:
         filename = os.path.join(os.path.dirname(filename), "GT_" + os.path.basename(filename))
         filename = filename.replace(self.img_dir, self.mask_dir).replace('.jpg', '.png')
 
         mask = cv2.imread(filename)
         return mask
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> dict[str, torch.Tensor]:
         image = self.get_image(self.img_filenames[index])
         mask = self.get_mask(self.img_filenames[index])
 

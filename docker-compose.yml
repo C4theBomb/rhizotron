@@ -5,12 +5,13 @@ services:
     restart: unless-stopped
     build:
       context: .
+      dockerfile: Dockerfile.dev
     ports:
       - 8000:8000
     volumes:
       - ./:/app
     networks:
-      - minirhizotron
+      - housewars
     environment:
       DJANGO_SETTINGS_MODULE: "minirhizotron_webapp.settings.docker"
     depends_on:
@@ -24,9 +25,9 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - minirhizotron-mysql:/var/lib/mysql
+      - housewars-mysql:/var/lib/mysql
     networks:
-      - minirhizotron
+      - housewars
     environment:
       MYSQL_ROOT_PASSWORD: "passw0rd"
       MYSQL_DATABASE: dev
@@ -34,7 +35,10 @@ services:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 5s
       retries: 10
+
 volumes:
-  minirhizotron-mysql:
+  housewars-mysql:
+
+
 networks:
-  minirhizotron: {}
+  housewars: {}

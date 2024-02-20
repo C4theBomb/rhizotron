@@ -6,7 +6,7 @@ from torchvision.transforms.v2 import functional as F_image
 
 
 class CNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1):
         super().__init__()
         self.step = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding),
@@ -17,14 +17,13 @@ class CNNBlock(nn.Module):
             nn.ReLU()
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.step(x)
         return x
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1, dropout=0.2):
-        super().__init__()
+    def __init__(self, in_channels: int = 3, out_channels: int = 1, dropout: float = 0.2):
         self.down_step1 = CNNBlock(in_channels, 64)
         self.down_step2 = CNNBlock(64, 128)
         self.down_step3 = CNNBlock(128, 256)
@@ -45,7 +44,7 @@ class UNet(nn.Module):
 
         self.maxpool = nn.MaxPool2d(2)
 
-    def pad_input(self, x):
+    def pad_input(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[int, int]]:
         height = int(16 * round(x.shape[2] / 16))
         width = int(16 * round(x.shape[3] / 16))
 
@@ -53,10 +52,10 @@ class UNet(nn.Module):
 
         return resized, (x.shape[2], x.shape[3])
 
-    def unpad_output(self, x, original_dims):
+    def unpad_output(self, x: torch.Tensor, original_dims: tuple[int, int]) -> torch.Tensor:
         return F_image.resize(x, original_dims, antialias=None)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x, original_dims = self.pad_input(x)
 
         x1 = self.down_step1(x)

@@ -3,11 +3,14 @@
 
 
 segmentation/data/*
-segmentation/checkpoints
-segmentation/output
-segmentation/logs
-
 !segmentation/data/*.py
+
+segmentation/checkpoints
+
+segmentation/output
+
+logs
+
 
 ### Django ###
 *.log

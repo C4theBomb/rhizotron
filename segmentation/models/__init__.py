@@ -1,3 +1,3 @@
 from .unet import UNet
 
-from .lightning import TrainingModel
+from .lightning import TrainingModel, ModelType

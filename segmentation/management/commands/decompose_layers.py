@@ -1,31 +1,30 @@
 import os
+import logging
 import cv2
 import pandas as pd
 
-from django.core.management.base import BaseCommand
-
-import logging
+from django.core.management.base import BaseCommand, CommandParser
 
 from segmentation.utils import root_analysis, file_management
 
 
 class Command(BaseCommand):
-    help = 'Build composites from images'
+    help = 'Decompose images layers and calculate root metrics for each layer.'
 
     def __init__(self):
-        if not os.path.exists('logs'):
-            os.makedirs('logs')
-
         self.logger = logging.getLogger('main')
 
-    def add_arguments(self, parser):
-        parser.add_argument('--target', type=str, default=None, help='Target directory')
-        parser.add_argument('--output', type=str, default='output', help='Output directory')
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument('target', type=str, default=None, help='Target directory')
+        parser.add_argument('--output', type=str, default='segmentation/output', help='Output directory')
         parser.add_argument('--recursive', action='store_true', help='Recursively search for images')
         parser.add_argument('--scaling_factor', type=float, default=0.2581, help='Scaling factor')
 
-    def handle(self, *args, **options):
-        image_filenames = file_management.get_image_filenames(args.target, args.recursive)
+    def handle(self, *args, **options) -> None:
+        if not os.path.exists(options['output']):
+            os.makedirs(options['output'])
+        
+        image_filenames = file_management.get_image_filenames(options['target'], options['recursive'])
 
         measurements = pd.DataFrame(columns=['image', 'layer', 'root_count',
                                     'total_root_length', 'total_root_area', 'root_diameter', 'total_root_volume'])
@@ -45,7 +44,7 @@ class Command(BaseCommand):
 
                 for layer in range(tube_lower_end, tube_higher_end + 1):
                     segment = image[:, (layer - 1) * segment_width:layer * segment_width]
-                    metrics = root_analysis.calculate_metrics(segment, args.scaling_factor)
+                    metrics = root_analysis.calculate_metrics(segment, options['scaling_factor'])
 
                     measurements.loc[len(measurements)] = {
                         'image': image_filename,
@@ -58,4 +57,5 @@ class Command(BaseCommand):
             pass
         finally:
             measurements = measurements.round(4)
-            measurements.to_csv(f'{args.output}/layered_measurements.csv', index=False)
+            measurements.to_csv(f'{options['output']}/layered_measurements.csv', index=False)
+            self.logger.info(f'Saved measurements to {options['output']}/layered_measurements.csv')
