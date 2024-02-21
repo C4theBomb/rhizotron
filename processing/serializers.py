@@ -53,5 +53,5 @@ class LabelMeSerializer(ModelSerializer):
             'json': {'required': True},
         }
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> Mask:
         return Mask.objects.create(image=validated_data['image'], picture=validated_data['picture'], threshold=0)

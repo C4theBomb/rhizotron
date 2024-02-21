@@ -5,10 +5,12 @@ import json
 from PIL import Image as PILImage
 import numpy as np
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from django.core.files import File
 from rest_framework import viewsets, permissions, status
+from rest_framework.serializers import Serializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
@@ -31,10 +33,11 @@ from segmentation import predict, masks
 class DatasetViewSet(viewsets.ModelViewSet):
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
-    def create(self, request):
+    def create(self, request: HttpRequest) -> Response:
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -42,7 +45,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
         serializer.save(owner=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Dataset]:
         if self.request.user.is_anonymous:
             return self.queryset.filter(public=True)
 
@@ -60,10 +63,11 @@ class DatasetViewSet(viewsets.ModelViewSet):
 class PictureViewSet(viewsets.ModelViewSet):
     queryset = Picture.objects.all()
     serializer_class = PictureSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     http_method_names = ['get', 'post', 'delete']
 
-    def create(self, request, dataset_pk=None):
+    def create(self, request: HttpRequest, dataset_pk: int = None) -> Response:
         dataset = Dataset.objects.get(pk=dataset_pk)
 
         serializer = self.get_serializer(data=request.data)
@@ -74,7 +78,7 @@ class PictureViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @extend_schema(summary='Delete multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
-    def bulk_destroy(self, request, dataset_pk=None, format=None):
+    def bulk_destroy(self, request: HttpRequest, dataset_pk: int = None, format: str = None) -> Response:
         ids = [int(id) for id in request.query_params.get('ids').split(',')]
         images = self.queryset.filter(dataset=dataset_pk, id__in=ids)
 
@@ -87,7 +91,7 @@ class PictureViewSet(viewsets.ModelViewSet):
 
     @extend_schema(tags=['masks'], summary='Predict masks for multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)], responses={200: MaskSerializer(many=True)})
     @action(detail=False, methods=['post'], url_path='predict', serializer_class=MaskSerializer)
-    def bulk_predict(self, request, dataset_pk=None):
+    def bulk_predict(self, request: HttpRequest, dataset_pk: int = None) -> Response:
         image_ids = request.query_params.get('ids')
 
         if image_ids is None:
@@ -113,7 +117,8 @@ class PictureViewSet(viewsets.ModelViewSet):
             mask.save(mask_byte_arr, format='PNG')
 
             mask = File(mask_byte_arr, name=f'{image.file_basename}_mask.png')
-            masks.append(Mask(picture=image, image=mask, threshold=area_threshold))
+            masks.append(Mask(picture=image, image=mask,
+                         threshold=area_threshold))
 
         masks = Mask.objects.bulk_create(masks)
 
@@ -121,24 +126,26 @@ class PictureViewSet(viewsets.ModelViewSet):
 
     @extend_schema(tags=['masks'], summary='Delete predictions for multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
     @bulk_predict.mapping.delete
-    def bulk_destroy_predictions(self, request, dataset_pk=None):
+    def bulk_destroy_predictions(self, request: HttpRequest, dataset_pk: int = None) -> Response:
         image_ids = request.query_params.get('ids')
 
         if image_ids is None:
             return Response({'detail': 'No image ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
         ids = [int(id) for id in image_ids.split(',')]
-        images = self.queryset.filter(dataset=dataset_pk, id__in=ids, mask__isnull=False)
+        images = self.queryset.filter(
+            dataset=dataset_pk, id__in=ids, mask__isnull=False)
 
         if len(ids) != len(images):
             return Response({'detail': 'Some images do not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        predictions = Mask.objects.filter(picture__dataset=dataset_pk, picture__id__in=ids)
+        predictions = Mask.objects.filter(
+            picture__dataset=dataset_pk, picture__id__in=ids)
         predictions.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Picture]:
         return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
 
 
@@ -154,17 +161,18 @@ class PictureViewSet(viewsets.ModelViewSet):
 )
 class MaskViewSet(viewsets.ModelViewSet):
     serializer_class = MaskSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     queryset = Mask.objects.all()
     http_method_names = ['get', 'post', 'delete', 'patch']
 
-    def list(self, request, dataset_pk=None, image_pk=None):
+    def list(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None) -> Response:
         queryset = self.queryset.filter(picture=image_pk)
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def create(self, request, dataset_pk=None, image_pk=None):
+    def create(self, request, dataset_pk=None, image_pk=None) -> Response:
         original = Picture.objects.get(pk=image_pk)
 
         if hasattr(original, 'mask') and original.mask is not None:
@@ -185,7 +193,7 @@ class MaskViewSet(viewsets.ModelViewSet):
         serializer.save(picture=original, image=mask)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def partial_update(self, request, dataset_pk=None, image_pk=None, pk=None):
+    def partial_update(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> Response:
         original_mask = Mask.objects.get(pk=pk)
 
         serializer = self.get_serializer(data=request.data, partial=True)
@@ -194,7 +202,8 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         area_threshold = serializer.validated_data['threshold']
 
-        image = predict(ProcessingConfig.model, original_mask.picture.image, area_threshold)
+        image = predict(ProcessingConfig.model,
+                        original_mask.picture.image, area_threshold)
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
 
@@ -208,7 +217,7 @@ class MaskViewSet(viewsets.ModelViewSet):
 
     @extend_schema(request=LabelMeSerializer, responses={200: MaskSerializer})
     @action(detail=False, methods=['post'], url_path='labelme')
-    def create_label_me(self, request, dataset_pk=None, image_pk=None):
+    def create_label_me(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None) -> Response:
         serializer = self.get_serializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -219,7 +228,8 @@ class MaskViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Prediction already exists for this image.'}, status=status.HTTP_400_BAD_REQUEST)
 
         image = PILImage.open(original.image)
-        labelme_data = json.loads(serializer.validated_data['json'].read().decode('utf-8'))
+        labelme_data = json.loads(
+            serializer.validated_data['json'].read().decode('utf-8'))
 
         mask = masks.from_labelme(np.array(image), labelme_data)
 
@@ -234,13 +244,14 @@ class MaskViewSet(viewsets.ModelViewSet):
 
     @extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY})
     @action(detail=True, methods=['get'], url_path='labelme')
-    def export_label_me(self, request, dataset_pk=None, image_pk=None, pk=None):
+    def export_label_me(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> HttpResponse:
         prediction = Mask.objects.get(pk=pk)
 
         image = PILImage.open(prediction.picture.image)
         mask = PILImage.open(prediction.image)
 
-        labelme_data = masks.from_labelme(prediction.picture.filename, np.array(mask))
+        labelme_data = masks.from_labelme(
+            prediction.picture.filename, np.array(mask))
 
         outfile = io.BytesIO()
         with zipfile.ZipFile(outfile, 'w') as zf:
@@ -250,15 +261,16 @@ class MaskViewSet(viewsets.ModelViewSet):
             with zf.open(os.path.basename(prediction.picture.filename), 'w') as f:
                 image.save(f, format='PNG')
 
-        response = HttpResponse(outfile.getvalue(), content_type='application/octet-stream')
+        response = HttpResponse(
+            outfile.getvalue(), content_type='application/octet-stream')
         response['Content-Disposition'] = f'attachment; filename={prediction.picture.file_basename}_labelme.zip'
 
         return response
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Mask]:
         return self.queryset.filter(picture=self.kwargs['image_pk'])
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Serializer:
         if self.action == 'create_label_me':
             return LabelMeSerializer
         return MaskSerializer

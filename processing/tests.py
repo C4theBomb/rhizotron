@@ -23,10 +23,11 @@ MEDIA_ROOT = tempfile.mkdtemp()
 class TestDatasetViewSet(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='test', password='test')
-        self.dataset = Dataset.objects.create(name='test', description='test', owner=self.user)
+        self.dataset = Dataset.objects.create(
+            name='test', description='test', owner=self.user)
         self.client = APIRequestFactory()
 
-    def test_list_endpoint(self):
+    def test_list_endpoint(self) -> None:
         request = self.client.get('datasets/')
         force_authenticate(request, user=self.user)
 
@@ -35,7 +36,7 @@ class TestDatasetViewSet(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 
-    def test_retrieve_endpoint(self):
+    def test_retrieve_endpoint(self) -> None:
         request = self.client.get(f'datasets/{self.dataset.id}/')
         force_authenticate(request, user=self.user)
 
@@ -52,7 +53,7 @@ class TestDatasetViewSet(APITestCase):
         }
         self.assertDictContainsSubset(expected_data, response.data)
 
-    def test_create_endpoint(self):
+    def test_create_endpoint(self) -> None:
         data = {'name': 'test2', 'description': 'test2'}
         request = self.client.post('datasets/', data)
         force_authenticate(request, user=self.user)
@@ -61,9 +62,10 @@ class TestDatasetViewSet(APITestCase):
         response = view(request)
         self.assertEqual(response.status_code, 201)
 
-        self.assertEqual(Dataset.objects.filter(pk=response.data['id']).count(), 1)
+        self.assertEqual(Dataset.objects.filter(
+            pk=response.data['id']).count(), 1)
 
-    def test_update_endpoint(self):
+    def test_update_endpoint(self) -> None:
         data = {'name': 'updated', 'description': 'updated'}
         request = self.client.patch(f'datasets/{self.dataset.id}/', data)
         force_authenticate(request, user=self.user)
@@ -77,7 +79,7 @@ class TestDatasetViewSet(APITestCase):
         self.assertEqual(self.dataset.name, 'updated')
         self.assertEqual(self.dataset.description, 'updated')
 
-    def test_delete_endpoint(self):
+    def test_delete_endpoint(self) -> None:
         request = self.client.delete(f'datasets/{self.dataset.id}/')
         force_authenticate(request, user=self.user)
 
@@ -91,20 +93,22 @@ class TestDatasetViewSet(APITestCase):
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
 class TestPictureViewSet(APITestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         os.makedirs(MEDIA_ROOT, exist_ok=True)
 
         self.user = User.objects.create_user(username='test', password='test')
-        self.dataset = Dataset.objects.create(name='test', description='test', owner=self.user)
+        self.dataset = Dataset.objects.create(
+            name='test', description='test', owner=self.user)
 
         image = PILImage.new('RGB', (100, 100), color='red')
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='PNG')
 
-        self.picture = Picture.objects.create(dataset=self.dataset, image=File(image_bytes, name='test.png'))
+        self.picture = Picture.objects.create(
+            dataset=self.dataset, image=File(image_bytes, name='test.png'))
         self.client = APIRequestFactory()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         shutil.rmtree(MEDIA_ROOT)
 
     def test_list_endpoint(self):
@@ -116,12 +120,13 @@ class TestPictureViewSet(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 
-    def test_retrieve_endpoint(self):
+    def test_retrieve_endpoint(self) -> None:
         request = self.client.get(f'images/{self.picture.id}/')
         force_authenticate(request, user=self.user)
 
         view = PictureViewSet.as_view({'get': 'retrieve'})
-        response = view(request, dataset_pk=self.dataset.id, pk=self.picture.id)
+        response = view(request, dataset_pk=self.dataset.id,
+                        pk=self.picture.id)
         self.assertEqual(response.status_code, 200)
 
         expected_data = {
@@ -133,7 +138,7 @@ class TestPictureViewSet(APITestCase):
         parsed_url = urlparse(response.data['image'])
         self.assertTrue(parsed_url.scheme in ['http', 'https'])
 
-    def test_create_endpoint(self):
+    def test_create_endpoint(self) -> None:
         image = PILImage.new('RGB', (100, 100), color='red')
 
         tmp_file = tempfile.NamedTemporaryFile(suffix='.png')
@@ -148,30 +153,34 @@ class TestPictureViewSet(APITestCase):
         response = view(request, dataset_pk=self.dataset.id)
         self.assertEqual(response.status_code, 201)
 
-        self.assertEqual(Picture.objects.filter(pk=response.data['id']).count(), 1)
+        self.assertEqual(Picture.objects.filter(
+            pk=response.data['id']).count(), 1)
 
-    def test_delete_endpoint(self):
+    def test_delete_endpoint(self) -> None:
         request = self.client.delete(f'images/{self.picture.id}/')
         force_authenticate(request, user=self.user)
 
         view = PictureViewSet.as_view({'delete': 'destroy'})
-        response = view(request, dataset_pk=self.dataset.id, pk=self.picture.id)
+        response = view(request, dataset_pk=self.dataset.id,
+                        pk=self.picture.id)
         self.assertEqual(response.status_code, 204)
 
         with self.assertRaises(Picture.DoesNotExist):
             Picture.objects.get(id=self.picture.id)
 
-    def test_bulk_destroy_endpoint(self):
-        request = self.client.delete(f'images/bulk_destroy/', QUERY_STRING=urlencode({'ids': f'{self.picture.id}'}))
+    def test_bulk_destroy_endpoint(self) -> None:
+        request = self.client.delete(
+            f'images/bulk_destroy/', QUERY_STRING=urlencode({'ids': f'{self.picture.id}'}))
         force_authenticate(request, user=self.user)
 
         view = PictureViewSet.as_view({'delete': 'bulk_destroy'})
         response = view(request, dataset_pk=self.dataset.id)
         self.assertEqual(response.status_code, 204)
 
-        self.assertEqual(Picture.objects.filter(dataset=self.dataset).count(), 0)
+        self.assertEqual(Picture.objects.filter(
+            dataset=self.dataset).count(), 0)
 
-    def test_bulk_predict_endpoint(self):
+    def test_bulk_predict_endpoint(self) -> None:
         request = self.client.post(f'images/bulk_predict/',
                                    data={'threshold': 15},
                                    QUERY_STRING=urlencode({'ids': f'{self.picture.id}'}))
@@ -180,9 +189,10 @@ class TestPictureViewSet(APITestCase):
         view = PictureViewSet.as_view({'post': 'bulk_predict'})
         response = view(request, dataset_pk=self.dataset.id)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(response.data), Mask.objects.filter(picture__dataset=self.dataset).count())
+        self.assertEqual(len(response.data), Mask.objects.filter(
+            picture__dataset=self.dataset).count())
 
-    def test_bulk_destroy_predictions_endpoint(self):
+    def test_bulk_destroy_predictions_endpoint(self) -> None:
         request = self.client.delete(
             'images/bulk_destroy_predictions/', QUERY_STRING=urlencode({'ids': f'{self.picture.id}'}))
         force_authenticate(request, user=self.user)
@@ -191,32 +201,38 @@ class TestPictureViewSet(APITestCase):
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='PNG')
 
-        Mask.objects.create(picture=self.picture, image=File(image_bytes, name='test_mask.png'))
+        Mask.objects.create(picture=self.picture, image=File(
+            image_bytes, name='test_mask.png'))
 
         view = PictureViewSet.as_view({'delete': 'bulk_destroy_predictions'})
         response = view(request, dataset_pk=self.dataset.id)
         self.assertEqual(response.status_code, 204)
 
-        self.assertEqual(Mask.objects.filter(picture__dataset=self.dataset).count(), 0)
+        self.assertEqual(Mask.objects.filter(
+            picture__dataset=self.dataset).count(), 0)
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
 class TestMaskViewSet(APITestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.user = User.objects.create_user(username='test', password='test')
-        self.dataset = Dataset.objects.create(name='test', description='test', owner=self.user)
+        self.dataset = Dataset.objects.create(
+            name='test', description='test', owner=self.user)
 
         image = PILImage.new('RGB', (100, 100), color='red')
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='PNG')
 
-        self.picture = Picture.objects.create(dataset=self.dataset, image=File(image_bytes, name='test.png'))
-        self.mask = Mask.objects.create(picture=self.picture, image=File(image_bytes, name='test_mask.png'))
+        self.picture = Picture.objects.create(
+            dataset=self.dataset, image=File(image_bytes, name='test.png'))
+        self.mask = Mask.objects.create(
+            picture=self.picture, image=File(image_bytes, name='test_mask.png'))
 
-        self.picture_no_mask = Picture.objects.create(dataset=self.dataset, image=File(image_bytes, name='test.png'))
+        self.picture_no_mask = Picture.objects.create(
+            dataset=self.dataset, image=File(image_bytes, name='test.png'))
         self.client = APIRequestFactory()
 
-    def test_list_endpoint(self):
+    def test_list_endpoint(self) -> None:
         request = self.client.get(f'masks/')
         force_authenticate(request, user=self.user)
 
@@ -226,12 +242,13 @@ class TestMaskViewSet(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
 
-    def test_retrieve_endpoint(self):
+    def test_retrieve_endpoint(self) -> None:
         request = self.client.get(f'masks/')
         force_authenticate(request, user=self.user)
 
         view = MaskViewSet.as_view({'get': 'retrieve'})
-        response = view(request, dataset_pk=self.dataset.id, image_pk=self.picture.id, pk=self.mask.id)
+        response = view(request, dataset_pk=self.dataset.id,
+                        image_pk=self.picture.id, pk=self.mask.id)
 
         self.assertEqual(response.status_code, 200)
 
@@ -245,42 +262,46 @@ class TestMaskViewSet(APITestCase):
         parsed_url = urlparse(response.data['image'])
         self.assertTrue(parsed_url.scheme in ['http', 'https'])
 
-    def test_create_endpoint(self):
+    def test_create_endpoint(self) -> None:
         data = {'threshold': 0}
         request = self.client.post(f'masks/', data)
         force_authenticate(request, user=self.user)
 
         view = MaskViewSet.as_view({'post': 'create'})
-        response = view(request, dataset_pk=self.dataset.id, image_pk=self.picture_no_mask.id)
+        response = view(request, dataset_pk=self.dataset.id,
+                        image_pk=self.picture_no_mask.id)
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(Mask.objects.filter(pk=response.data['id']).count(), 1)
+        self.assertEqual(Mask.objects.filter(
+            pk=response.data['id']).count(), 1)
 
-    def test_update_endpoint(self):
+    def test_update_endpoint(self) -> None:
         data = {'threshold': 5}
         request = self.client.patch(f'masks/{self.mask.id}/', data)
         force_authenticate(request, user=self.user)
 
         view = MaskViewSet.as_view({'patch': 'partial_update'})
-        response = view(request, dataset_pk=self.dataset.id, image_pk=self.picture.id, pk=self.mask.id)
+        response = view(request, dataset_pk=self.dataset.id,
+                        image_pk=self.picture.id, pk=self.mask.id)
         self.assertEqual(response.status_code, 200)
 
         self.mask.refresh_from_db()
         self.assertEqual(self.mask.threshold, 5)
 
-    def test_delete_endpoint(self):
+    def test_delete_endpoint(self) -> None:
         request = self.client.delete(f'masks/{self.mask.id}/')
         force_authenticate(request, user=self.user)
 
         view = MaskViewSet.as_view({'delete': 'destroy'})
-        response = view(request, dataset_pk=self.dataset.id, image_pk=self.picture.id, pk=self.mask.id)
+        response = view(request, dataset_pk=self.dataset.id,
+                        image_pk=self.picture.id, pk=self.mask.id)
         self.assertEqual(response.status_code, 204)
 
         with self.assertRaises(Mask.DoesNotExist):
             Mask.objects.get(id=self.mask.id)
 
-    def test_create_labelme_endpoint(self):
+    def test_create_labelme_endpoint(self) -> None:
         pass
 
-    def test_export_labelme_endpoint(self):
+    def test_export_labelme_endpoint(self) -> None:
         pass
