@@ -258,6 +258,11 @@ class TestMaskViewSet(APITestCase):
             'threshold': self.mask.threshold
         }
         self.assertDictContainsSubset(expected_data, response.data)
+        self.assertIn('root_count', response.data)
+        self.assertIn('average_root_diameter', response.data)
+        self.assertIn('total_root_length', response.data)
+        self.assertIn('total_root_area', response.data)
+        self.assertIn('total_root_volume', response.data)
 
         parsed_url = urlparse(response.data['image'])
         self.assertTrue(parsed_url.scheme in ['http', 'https'])
