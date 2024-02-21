@@ -1,5 +1,5 @@
 """
-URL configuration for minirhizotron_webapp project.
+URL configuration for rhizotron project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
@@ -27,7 +27,8 @@ urlpatterns = [
 
     path('api/', include('rest_framework.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/schema/swagger/', SpectacularSwaggerView.as_view(), name='schema-swagger'),
+    path('api/schema/swagger/', SpectacularSwaggerView.as_view(),
+         name='schema-swagger'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(), name='schema-redoc'),
 
     path('admin/', admin.site.urls),

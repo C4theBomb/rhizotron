@@ -13,7 +13,7 @@ services:
     networks:
       - housewars
     environment:
-      DJANGO_SETTINGS_MODULE: "minirhizotron_webapp.settings.docker"
+      DJANGO_SETTINGS_MODULE: "rhizotron.settings.docker"
     depends_on:
       mysqldb:
         condition: service_healthy
@@ -25,9 +25,9 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - housewars-mysql:/var/lib/mysql
+      - rhizotron-mysql:/var/lib/mysql
     networks:
-      - housewars
+      - rhizotron
     environment:
       MYSQL_ROOT_PASSWORD: "passw0rd"
       MYSQL_DATABASE: dev

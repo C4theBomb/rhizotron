@@ -17,4 +17,4 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000/tcp
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "minirhizotron_webapp.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "rhizotron.wsgi:application"]
