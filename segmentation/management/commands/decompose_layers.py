@@ -25,9 +25,9 @@ class Command(BaseCommand):
             os.makedirs(options['output'])
         
         image_filenames = file_management.get_image_filenames(options['target'], options['recursive'])
-
-        measurements = pd.DataFrame(columns=['image', 'layer', 'root_count',
-                                    'total_root_length', 'total_root_area', 'root_diameter', 'total_root_volume'])
+        
+        measurements = pd.DataFrame(columns=[
+                                    'image', 'layer', 'root_count', 'average_root_diameter', 'total_root_length', 'total_root_area', 'total_root_volume'])
 
         try:
             for index, image_filename in enumerate(image_filenames):

@@ -19,7 +19,7 @@ from processing.models import Dataset, Picture, Mask
 from processing.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
 from processing.permissions import IsOwnerOrReadOnly
 from processing.apps import ProcessingConfig
-from segmentation import predict, masks
+from segmentation import predict, masks, calculate_metrics
 
 
 @extend_schema(tags=['datasets'])
@@ -57,8 +57,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
     list=extend_schema(summary='List all images in a dataset'),
     create=extend_schema(summary='Upload a new image'),
     retrieve=extend_schema(summary='Retrieve an image'),
-    destroy=extend_schema(summary='Delete an image'),
-    bulk_predict=extend_schema(summary='Predict masks for multiple images'),
+    destroy=extend_schema(summary='Delete an image')
 )
 class PictureViewSet(viewsets.ModelViewSet):
     queryset = Picture.objects.all()
@@ -113,12 +112,15 @@ class PictureViewSet(viewsets.ModelViewSet):
         for image in images:
             mask = predict(ProcessingConfig.model, image.image, area_threshold)
 
+            metrics = calculate_metrics(
+                np.array(mask, dtype=np.uint8) / 255, 0.2581)
+
             mask_byte_arr = io.BytesIO()
             mask.save(mask_byte_arr, format='PNG')
 
             mask = File(mask_byte_arr, name=f'{image.file_basename}_mask.png')
             masks.append(Mask(picture=image, image=mask,
-                         threshold=area_threshold))
+                         threshold=area_threshold, **metrics))
 
         masks = Mask.objects.bulk_create(masks)
 
@@ -186,11 +188,14 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         image = predict(ProcessingConfig.model, original.image, area_threshold)
 
+        metrics = calculate_metrics(
+            np.array(image, dtype=np.uint8) / 255, 0.2581)
+
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
 
         mask = File(mask_byte_arr, name=original.filename)
-        serializer.save(picture=original, image=mask)
+        serializer.save(picture=original, image=mask, **metrics)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def partial_update(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> Response:
@@ -204,11 +209,20 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         image = predict(ProcessingConfig.model,
                         original_mask.picture.image, area_threshold)
+
+        metrics = calculate_metrics(
+            np.array(image, dtype=np.uint8) / 255, 0.2581)
+
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
 
         original_mask.image = File(mask_byte_arr)
         original_mask.threshold = area_threshold
+        original_mask.root_count = metrics['root_count']
+        original_mask.average_root_diameter = metrics['average_root_diameter']
+        original_mask.total_root_length = metrics['total_root_length']
+        original_mask.total_root_area = metrics['total_root_area']
+        original_mask.total_root_volume = metrics['total_root_volume']
         new_mask = original_mask.save()
 
         serializer = self.get_serializer(new_mask)
@@ -233,11 +247,14 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         mask = masks.from_labelme(np.array(image), labelme_data)
 
+        metrics = calculate_metrics(
+            np.array(mask, dtype=np.uint8) / 255, 0.2581)
+
         mask_byte_arr = io.BytesIO()
         mask.save(mask_byte_arr, format='PNG')
         mask = File(mask_byte_arr, name=original.filename)
 
-        instance = serializer.save(picture=original, image=mask)
+        instance = serializer.save(picture=original, image=mask, **metrics)
         instance_serializer = MaskSerializer(instance)
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)

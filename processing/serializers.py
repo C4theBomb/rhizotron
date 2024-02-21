@@ -24,7 +24,8 @@ class MaskSerializer(ModelSerializer):
     class Meta:
         model = Mask
         fields = '__all__'
-        read_only_fields = ['created', 'updated', 'image', 'mask', 'picture']
+        read_only_fields = ['created', 'updated', 'image', 'mask', 'picture', 'root_count',
+                            'average_root_diameter', 'total_root_length', 'total_root_area', 'total_root_volume']
         write_only_fields = ['threshold']
         extra_kwargs = {
             'threshold': {'required': False, 'default': 0},

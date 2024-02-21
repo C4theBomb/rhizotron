@@ -46,6 +46,12 @@ class Mask(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    root_count = models.IntegerField(default=0)
+    average_root_diameter = models.FloatField(default=0)
+    total_root_length = models.FloatField(default=0)
+    total_root_area = models.FloatField(default=0)
+    total_root_volume = models.FloatField(default=0)
+
     @property
     def filename(self) -> str:
         return os.path.basename(self.image.name)

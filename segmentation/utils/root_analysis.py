@@ -14,7 +14,8 @@ def find_root_count(image: np.ndarray) -> int:
     int: The number of roots in the image.
     """
 
-    image_contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
+    image_contours, _ = cv2.findContours(
+        image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
 
     return len(image_contours)
 
@@ -65,7 +66,8 @@ def find_root_diameter(image: np.ndarray, scaling_factor: float) -> float:
 
     skeleton = skeletonize(image).astype(np.uint8)
 
-    image_contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    image_contours, _ = cv2.findContours(
+        image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     y, x = np.where(skeleton == 1)
 
@@ -97,7 +99,8 @@ def find_total_root_volume(image: np.ndarray, scaling_factor: float) -> float:
 
     skeleton = skeletonize(image).astype(np.uint8)
 
-    image_contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    image_contours, _ = cv2.findContours(
+        image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     y, x = np.where(skeleton == 1)
 
@@ -132,16 +135,16 @@ def calculate_metrics(image: np.ndarray, scaling_factor: float) -> dict:
     if root_count == 0:
         return {
             "root_count": 0,
+            "average_root_diameter": 0,
             "total_root_length": 0,
             "total_root_area": 0,
-            "root_diameter": 0,
             "total_root_volume": 0
         }
 
     return {
         "root_count": find_root_count(image),
+        "average_root_diameter": find_root_diameter(image, scaling_factor),
         "total_root_length": find_total_root_length(image, scaling_factor),
         "total_root_area": find_total_root_area(image, scaling_factor),
-        "root_diameter": find_root_diameter(image, scaling_factor),
         "total_root_volume": find_total_root_volume(image, scaling_factor)
     }

@@ -21,10 +21,11 @@ from segmentation.utils import masks, file_management, root_analysis
 
 from django.core.management.base import BaseCommand, CommandParser
 
+
 class Command(BaseCommand):
     def __init__(self):
         self.logger = logging.getLogger('main')
-        
+
     def get_image(self, filename: str, size: int = None) -> torch.Tensor:
         image = cv2.imread(filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -38,35 +39,47 @@ class Command(BaseCommand):
         image = F.to_dtype(image, torch.float32, scale=True)
 
         return image
-    
+
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument('target', type=str, default=None, help='Target directory')
-        parser.add_argument('--output', type=str, default='segmentation/output', help='Output directory')
-        parser.add_argument('--recursive', action='store_true', help='Recursively search for images')
+        parser.add_argument('target', type=str, default=None,
+                            help='Target directory')
+        parser.add_argument(
+            '--output', type=str, default='segmentation/output', help='Output directory')
+        parser.add_argument('--recursive', action='store_true',
+                            help='Recursively search for images')
 
-        parser.add_argument('--model', type=ModelType.from_string, default=ModelType.UNET, choices=list(ModelType), help='Model to use')
-        parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint to load')
+        parser.add_argument('--model', type=ModelType.from_string,
+                            default=ModelType.UNET, choices=list(ModelType), help='Model to use')
+        parser.add_argument('--checkpoint', type=str,
+                            default=None, help='Checkpoint to load')
 
-        parser.add_argument('--save_mask', action='store_true', help='Save masks')
-        parser.add_argument('--save_comparison', action='store_true', help='Compare images and masks')
-        parser.add_argument('--save_labelme', action='store_true', help='Save masks in labelme format')
+        parser.add_argument(
+            '--save_mask', action='store_true', help='Save masks')
+        parser.add_argument(
+            '--save_comparison', action='store_true', help='Compare images and masks')
+        parser.add_argument('--save_labelme', action='store_true',
+                            help='Save masks in labelme format')
 
-        parser.add_argument('--size', type=int, default=None, help='Size to resize images to')
-        parser.add_argument('--scaling_factor', type=float, default=0.2581, help='Scaling factor for the images')
-        parser.add_argument('--threshold_area', type=int, default=15, help='Threshold area for the mask')
+        parser.add_argument('--size', type=int, default=None,
+                            help='Size to resize images to')
+        parser.add_argument('--scaling_factor', type=float,
+                            default=0.2581, help='Scaling factor for the images')
+        parser.add_argument('--threshold_area', type=int,
+                            default=15, help='Threshold area for the mask')
 
         parser.add_argument('--cuda', action='store_true', help='Use CUDA')
-        
+
     def handle(self, *args, **options) -> None:
         if not os.path.exists(options['output']):
             os.makedirs(options['output'])
-        
-        device = torch.device("cuda" if options['cuda'] and torch.cuda.is_available() else "cpu")
+
+        device = torch.device(
+            "cuda" if options['cuda'] and torch.cuda.is_available() else "cpu")
         torch.set_float32_matmul_precision('medium')
         logging.info(f'Using PyTorch version: {torch.__version__}')
         logging.info(f'Running with arguments: {options}')
         logging.info(f'Using device: {device}')
-    
+
         model = options['model'].value(3, 1)
 
         checkpoint = torch.load(options['checkpoint'])
@@ -80,13 +93,15 @@ class Command(BaseCommand):
         model.eval()
         model.to(device)
 
-        image_filenames = file_management.get_image_filenames(options['target'], options['recursive'])
+        image_filenames = file_management.get_image_filenames(
+            options['target'], options['recursive'])
 
-        measurements = pd.DataFrame(columns=['image', 'root_count', 'root_length',
-                                    'avg_root_length', 'root_area', 'avg_root_area', 'avg_diameter', 'root_volume', 'avg_root_volume'])
+        measurements = pd.DataFrame(columns=[
+                                    'image', 'root_count', 'average_root_diameter', 'total_root_length', 'total_root_area', 'total_root_volume'])
 
         for index, image_filename in enumerate(image_filenames):
-            logging.info(f'Running image {index + 1} of {len(image_filenames)}: {image_filename}')
+            logging.info(
+                f'Running image {index + 1} of {len(image_filenames)}: {image_filename}')
 
             original_image = self.get_image(image_filename, options['size'])
 
@@ -132,21 +147,26 @@ class Command(BaseCommand):
 
                 original_image = original_image.numpy().transpose((1, 2, 0)) * 255
                 original_image = original_image.astype(np.uint8)
-                original_image = cv2.cvtColor(original_image, cv2.COLOR_RGB2BGR)
+                original_image = cv2.cvtColor(
+                    original_image, cv2.COLOR_RGB2BGR)
 
                 cv2.imwrite(os.path.join(options['output'], 'labelme', os.path.relpath(
                     os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)), original_image)
 
-                labelme_json = masks.to_labelme(os.path.basename(image_filename), mask)
+                labelme_json = masks.to_labelme(
+                    os.path.basename(image_filename), mask)
 
                 with open(os.path.join(options['output'], 'labelme', os.path.relpath(
                         os.path.dirname(image_filename), options['target']), os.path.basename(image_filename).upper().replace('.PNG', '.json')), 'w') as f:
                     f.write(labelme_json)
 
             measurements.loc[index] = {'image': image_filename,
-                                    **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
+                                       **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
 
-            logging.info(f'Completed image {index + 1} of {len(image_filenames)}: {image_filename}')
+            logging.info(
+                f'Completed image {index + 1} of {len(image_filenames)}: {image_filename}')
 
-        measurements.to_csv(os.path.join(options['output'], 'measurements.csv'), index=False)
-        logging.info('Saved measurements to {}'.format(os.path.join(options['output'], "measurements.csv")))
+        measurements.to_csv(os.path.join(
+            options['output'], 'measurements.csv'), index=False)
+        logging.info('Saved measurements to {}'.format(
+            os.path.join(options['output'], "measurements.csv")))
