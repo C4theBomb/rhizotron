@@ -12,7 +12,8 @@ class CNNBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding),
+            nn.Conv2d(out_channels, out_channels,
+                      kernel_size, stride, padding),
             nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
@@ -24,6 +25,8 @@ class CNNBlock(nn.Module):
 
 class UNet(nn.Module):
     def __init__(self, in_channels: int = 3, out_channels: int = 1, dropout: float = 0.2):
+        super().__init__()
+
         self.down_step1 = CNNBlock(in_channels, 64)
         self.down_step2 = CNNBlock(64, 128)
         self.down_step3 = CNNBlock(128, 256)
@@ -40,7 +43,8 @@ class UNet(nn.Module):
         self.up_step7 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.up_step8 = CNNBlock(128, 64)
 
-        self.decoder_output = nn.Conv2d(64, out_channels, kernel_size=1, stride=1)
+        self.decoder_output = nn.Conv2d(
+            64, out_channels, kernel_size=1, stride=1)
 
         self.maxpool = nn.MaxPool2d(2)
 
@@ -74,7 +78,8 @@ class UNet(nn.Module):
         x4_pooled = self.maxpool(x4)
         x4_pooled = nn.Dropout2d(0.2)(x4_pooled)
 
-        encoder_output = checkpoint(self.encoder_output, x4_pooled, use_reentrant=False)
+        encoder_output = checkpoint(
+            self.encoder_output, x4_pooled, use_reentrant=False)
 
         y4 = self.up_step1(encoder_output)
         y4 = torch.cat([x4, y4], dim=1)
