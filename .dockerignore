@@ -1,1 +1,9 @@
+logs
+media
+frontend
+segmentation/data/datasets
+segmentation/output
+*.sqlite3
+
 venv
+.env
