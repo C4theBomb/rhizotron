@@ -1,8 +1,8 @@
-logs
 media
 frontend
 segmentation/data/datasets
 segmentation/output
+logs/*
 *.sqlite3
 
 venv

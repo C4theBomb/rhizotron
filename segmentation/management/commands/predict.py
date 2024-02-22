@@ -99,74 +99,76 @@ class Command(BaseCommand):
         measurements = pd.DataFrame(columns=[
                                     'image', 'root_count', 'average_root_diameter', 'total_root_length', 'total_root_area', 'total_root_volume'])
 
-        for index, image_filename in enumerate(image_filenames):
-            logging.info(
-                f'Running image {index + 1} of {len(image_filenames)}: {image_filename}')
+        try:
+            for index, image_filename in enumerate(image_filenames):
+                logging.info(
+                    f'Running image {index + 1} of {len(image_filenames)}: {image_filename}')
 
-            original_image = self.get_image(image_filename, options['size'])
+                original_image = self.get_image(image_filename, options['size'])
 
-            with torch.no_grad():
-                image = torch.clone(original_image).to(device)
-                image = image.unsqueeze(0)
-                output = model(image)
-                output = output.squeeze(0, 1)
-                output = (output > 0.5).float()
+                with torch.no_grad():
+                    image = torch.clone(original_image).to(device)
+                    image = image.unsqueeze(0)
+                    output = model(image)
+                    output = output.squeeze(0, 1)
+                    output = (output > 0.5).float()
 
-            output = output.type(torch.uint8) * 255
-            mask = output.cpu().numpy()
+                output = output.type(torch.uint8) * 255
+                mask = output.cpu().numpy()
 
-            if options['threshold_area'] > 0:
-                mask = masks.threshold(mask, options['threshold_area'])
+                if options['threshold_area'] > 0:
+                    mask = masks.threshold(mask, options['threshold_area'])
 
-            if options['save_mask']:
-                Path(os.path.join(options['output'], 'mask', os.path.relpath(
-                    os.path.dirname(image_filename), options['target']))).mkdir(parents=True, exist_ok=True)
-                cv2.imwrite(os.path.join(options['output'], 'mask', os.path.relpath(
-                    os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)), mask)
+                if options['save_mask']:
+                    Path(os.path.join(options['output'], 'mask', os.path.relpath(
+                        os.path.dirname(image_filename), options['target']))).mkdir(parents=True, exist_ok=True)
+                    cv2.imwrite(os.path.join(options['output'], 'mask', os.path.relpath(
+                        os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)), mask)
 
-            if options['save_comparison']:
-                figure = plt.figure(figsize=(10, 10))
+                if options['save_comparison']:
+                    figure = plt.figure(figsize=(10, 10))
 
-                figure.add_subplot(2, 1, 1)
-                plt.title('Image')
-                plt.imshow(image.squeeze(0).permute(1, 2, 0).cpu())
-                figure.add_subplot(2, 1, 2)
-                plt.title('Mask')
-                plt.imshow(mask, cmap='gray')
+                    figure.add_subplot(2, 1, 1)
+                    plt.title('Image')
+                    plt.imshow(image.squeeze(0).permute(1, 2, 0).cpu())
+                    figure.add_subplot(2, 1, 2)
+                    plt.title('Mask')
+                    plt.imshow(mask, cmap='gray')
 
-                Path(os.path.join(options['output'], 'compare', os.path.relpath(
-                    os.path.dirname(image_filename), options['target']))).mkdir(parents=True, exist_ok=True)
-                plt.savefig(os.path.join(options['output'], 'compare', os.path.relpath(
-                    os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)))
+                    Path(os.path.join(options['output'], 'compare', os.path.relpath(
+                        os.path.dirname(image_filename), options['target']))).mkdir(parents=True, exist_ok=True)
+                    plt.savefig(os.path.join(options['output'], 'compare', os.path.relpath(
+                        os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)))
 
-                plt.close(figure)
+                    plt.close(figure)
 
-            if options['save_labelme']:
-                Path(os.path.join(options['output'], 'labelme', os.path.relpath(
-                    os.path.dirname(image_filename), options['target']))).mkdir(parents=True, exist_ok=True)
+                if options['save_labelme']:
+                    Path(os.path.join(options['output'], 'labelme', os.path.relpath(
+                        os.path.dirname(image_filename), options['target']))).mkdir(parents=True, exist_ok=True)
 
-                original_image = original_image.numpy().transpose((1, 2, 0)) * 255
-                original_image = original_image.astype(np.uint8)
-                original_image = cv2.cvtColor(
-                    original_image, cv2.COLOR_RGB2BGR)
+                    original_image = original_image.numpy().transpose((1, 2, 0)) * 255
+                    original_image = original_image.astype(np.uint8)
+                    original_image = cv2.cvtColor(
+                        original_image, cv2.COLOR_RGB2BGR)
 
-                cv2.imwrite(os.path.join(options['output'], 'labelme', os.path.relpath(
-                    os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)), original_image)
+                    cv2.imwrite(os.path.join(options['output'], 'labelme', os.path.relpath(
+                        os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)), original_image)
 
-                labelme_json = masks.to_labelme(
-                    os.path.basename(image_filename), mask)
+                    labelme_json = masks.to_labelme(
+                        os.path.basename(image_filename), mask)
 
-                with open(os.path.join(options['output'], 'labelme', os.path.relpath(
-                        os.path.dirname(image_filename), options['target']), os.path.basename(image_filename).upper().replace('.PNG', '.json')), 'w') as f:
-                    f.write(labelme_json)
+                    with open(os.path.join(options['output'], 'labelme', os.path.relpath(
+                            os.path.dirname(image_filename), options['target']), os.path.basename(image_filename).upper().replace('.PNG', '.json')), 'w') as f:
+                        f.write(labelme_json)
 
-            measurements.loc[index] = {'image': image_filename,
-                                       **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
+                measurements.loc[index] = {'image': image_filename,
+                                        **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
 
-            logging.info(
-                f'Completed image {index + 1} of {len(image_filenames)}: {image_filename}')
-
-        measurements.to_csv(os.path.join(
-            options['output'], 'measurements.csv'), index=False)
-        logging.info('Saved measurements to {}'.format(
-            os.path.join(options['output'], "measurements.csv")))
+                logging.info(
+                    f'Completed image {index + 1} of {len(image_filenames)}: {image_filename}')
+        except KeyboardInterrupt:
+            pass
+        finally:
+            measurements = measurements.round(4)
+            measurements.to_csv(os.path.join(options['output'], 'measurements.csv'), index=False)
+            self.logger.info(f'Saved measurements to {options['output']}/measurements.csv')
