@@ -22,15 +22,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options) -> None:
         image_filepaths = file_management.get_image_filenames(options['target'], options['recursive'])
 
-        df = pd.DataFrame([], columns=['Date', 'DPI', 'Tube', 'Level', 'Path'])
+        df = pd.DataFrame([], columns=['Date', 'DPI', 'Plant Type', 'Tube', 'Level', 'Path'])
 
         for index, filepath in enumerate(image_filepaths):
             filename_parts = filepath.split('/')
             date = filename_parts[-2].split('_')[0]
             dpi = filename_parts[-2].split('_')[2].removesuffix('dpi')
+            plant_type = filename_parts[-1].split('_')[0]
             tube = filename_parts[-1].split('_')[1].removeprefix('T')
             level = filename_parts[-1].split('_')[2].removeprefix('L').removesuffix('.PNG')
-            df.loc[index] = ([date, dpi, tube, level, filepath])
+            df.loc[index] = ([date, dpi, plant_type, tube, level, filepath])
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m%d%Y')
         df['DPI'] = df['DPI'].astype(int)
@@ -39,7 +40,7 @@ class Command(BaseCommand):
 
         df.sort_values(by=['Date', 'Tube', 'Level'], inplace=True)
 
-        groups = df.groupby(['Date', 'Tube'])
+        groups = df.groupby(['Date', 'Tube', 'Plant Type'])
 
         for group_index, (name, group) in enumerate(groups):
             self.logger.info(
@@ -60,12 +61,12 @@ class Command(BaseCommand):
                 if not os.path.exists(f'./output/concatenated/{name[0].strftime("%m%d%Y")}'):
                     os.makedirs(f'./output/concatenated/{name[0].strftime("%m%d%Y")}')
                 cv2.imwrite(
-                    f'./output/concatenated/{name[0].strftime("%m%d%Y")}/CS_T{name[1]}_L{min_level}-{max_level}.png', image)
+                    f'./output/concatenated/{name[0].strftime("%m%d%Y")}/{name[2]}_T{name[1]}_L{min_level}-{max_level}.png', image)
             else:
                 if not os.path.exists(f'{options['output']}/{name[0].strftime("%m%d%Y")}'):
                     os.makedirs(f'{options['output']}/{name[0].strftime("%m%d%Y")}')
                 cv2.imwrite(
-                    f'{options['output']}/{name[0].strftime("%m%d%Y")}/CS_T{name[1]}_L{min_level}-{max_level}.png', image)
+                    f'{options['output']}/{name[0].strftime("%m%d%Y")}/{name[2]}_T{name[1]}_L{min_level}-{max_level}.png', image)
 
             self.logger.info(
                 f'Completed image {group_index + 1} of {len(groups)}: {name[0].strftime("%m%d%Y")}, Tube {name[1]}')
