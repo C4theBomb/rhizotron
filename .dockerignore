@@ -1,6 +1,7 @@
 media
 frontend
 segmentation/data/datasets
+segmentation/checkpoints
 segmentation/output
 logs/*
 *.sqlite3
