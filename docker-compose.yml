@@ -11,7 +11,7 @@ services:
     volumes:
       - ./:/app
     networks:
-      - housewars
+      - rhizotron
     environment:
       DJANGO_SETTINGS_MODULE: "rhizotron.settings.docker"
     depends_on:
@@ -37,8 +37,7 @@ services:
       retries: 10
 
 volumes:
-  housewars-mysql:
-
+  rhizotron-mysql:
 
 networks:
-  housewars: {}
+  rhizotron: {}
