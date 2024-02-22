@@ -1,6 +1,7 @@
 import os
 import io
 import shutil
+import json
 
 from rest_framework.test import APIRequestFactory, force_authenticate, APITestCase
 from rest_framework import reverse
@@ -306,7 +307,34 @@ class TestMaskViewSet(APITestCase):
             Mask.objects.get(id=self.mask.id)
 
     def test_create_labelme_endpoint(self) -> None:
-        pass
+        json_data = {
+            'shapes': []
+        }
+
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.json')
+        tmp_file.write(json.dumps(json_data).encode('utf-8'))
+        tmp_file.seek(0)
+
+        data = {'json': tmp_file}
+
+        request = self.client.post(f'masks/labelme/', data)
+        force_authenticate(request, user=self.user)
+
+        view = MaskViewSet.as_view({'post': 'create_labelme'})
+        response = view(request, dataset_pk=self.dataset.id,
+                        image_pk=self.picture_no_mask.id)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Mask.objects.filter(
+            pk=self.picture_no_mask.id).count(), 1)
 
     def test_export_labelme_endpoint(self) -> None:
-        pass
+        request = self.client.get(f'masks/{self.mask.id}/labelme/')
+        force_authenticate(request, user=self.user)
+
+        view = MaskViewSet.as_view({'get': 'export_labelme'})
+        response = view(request, dataset_pk=self.dataset.id,
+                        image_pk=self.picture.id, pk=self.mask.id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/octet-stream')

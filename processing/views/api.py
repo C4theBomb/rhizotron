@@ -112,8 +112,10 @@ class PictureViewSet(viewsets.ModelViewSet):
         for image in images:
             mask = predict(ProcessingConfig.model, image.image, area_threshold)
 
-            metrics = calculate_metrics(
-                np.array(mask, dtype=np.uint8) / 255, 0.2581)
+            mask_arr = np.array(mask) / 255
+            mask_arr = mask_arr.astype(np.uint8)
+
+            metrics = calculate_metrics(mask_arr, 0.2581)
 
             mask_byte_arr = io.BytesIO()
             mask.save(mask_byte_arr, format='PNG')
@@ -157,9 +159,7 @@ class PictureViewSet(viewsets.ModelViewSet):
     create=extend_schema(summary='Predict a mask for an image'),
     retrieve=extend_schema(summary='Retrieve a prediction'),
     partial_update=extend_schema(summary='Update a prediction'),
-    destroy=extend_schema(summary='Delete a prediction'),
-    create_label_me=extend_schema(summary='Create a mask using LabelMe'),
-    export_label_me=extend_schema(summary='Export a mask to LabelMe'),
+    destroy=extend_schema(summary='Delete a prediction')
 )
 class MaskViewSet(viewsets.ModelViewSet):
     serializer_class = MaskSerializer
@@ -188,8 +188,10 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         image = predict(ProcessingConfig.model, original.image, area_threshold)
 
-        metrics = calculate_metrics(
-            np.array(image, dtype=np.uint8) / 255, 0.2581)
+        mask_arr = np.array(image) / 255
+        mask_arr = mask_arr.astype(np.uint8)
+
+        metrics = calculate_metrics(mask_arr, 0.2581)
 
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
@@ -210,8 +212,10 @@ class MaskViewSet(viewsets.ModelViewSet):
         image = predict(ProcessingConfig.model,
                         original_mask.picture.image, area_threshold)
 
-        metrics = calculate_metrics(
-            np.array(image, dtype=np.uint8) / 255, 0.2581)
+        mask_arr = np.array(image) / 255
+        mask_arr = mask_arr.astype(np.uint8)
+
+        metrics = calculate_metrics(np.array(mask_arr, dtype=np.uint8), 0.2581)
 
         mask_byte_arr = io.BytesIO()
         image.save(mask_byte_arr, format='PNG')
@@ -229,10 +233,11 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(request=LabelMeSerializer, responses={200: MaskSerializer})
-    @action(detail=False, methods=['post'], url_path='labelme')
-    def create_label_me(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None) -> Response:
+    @extend_schema(request=LabelMeSerializer, responses={200: MaskSerializer}, summary='Create a mask using LabelMe')
+    @action(detail=False, methods=['post'], url_path='labelme', serializer_class=LabelMeSerializer)
+    def create_labelme(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None) -> Response:
         serializer = self.get_serializer(data=request.data, partial=True)
+
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -247,11 +252,13 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         mask = masks.from_labelme(np.array(image), labelme_data)
 
-        metrics = calculate_metrics(
-            np.array(mask, dtype=np.uint8) / 255, 0.2581)
+        mask_arr = np.array(mask) / 255
+        mask_arr = mask_arr.astype(np.uint8)
+        metrics = calculate_metrics(mask_arr, 0.2581)
 
+        mask_image = PILImage.fromarray(mask_arr)
         mask_byte_arr = io.BytesIO()
-        mask.save(mask_byte_arr, format='PNG')
+        mask_image.save(mask_byte_arr, format='PNG')
         mask = File(mask_byte_arr, name=original.filename)
 
         instance = serializer.save(picture=original, image=mask, **metrics)
@@ -259,16 +266,18 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY})
+    @extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY}, summary='Export a mask to LabelMe')
     @action(detail=True, methods=['get'], url_path='labelme')
-    def export_label_me(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> HttpResponse:
+    def export_labelme(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> HttpResponse:
         prediction = Mask.objects.get(pk=pk)
 
         image = PILImage.open(prediction.picture.image)
-        mask = PILImage.open(prediction.image)
+        mask = PILImage.open(prediction.image).convert('L')
 
-        labelme_data = masks.from_labelme(
-            prediction.picture.filename, np.array(mask))
+        mask_arr = np.array(mask) / 255
+        mask_arr = mask_arr.astype(np.uint8)
+
+        labelme_data = masks.to_labelme(prediction.picture.filename, mask_arr)
 
         outfile = io.BytesIO()
         with zipfile.ZipFile(outfile, 'w') as zf:
@@ -288,6 +297,6 @@ class MaskViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(picture=self.kwargs['image_pk'])
 
     def get_serializer_class(self) -> Serializer:
-        if self.action == 'create_label_me':
+        if self.action == 'create_labelme':
             return LabelMeSerializer
         return MaskSerializer
