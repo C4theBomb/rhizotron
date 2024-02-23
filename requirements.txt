@@ -19,7 +19,6 @@ django-cleanup==8.1.0
 django-compressor==4.3.1
 django-filter==23.5
 django-htmx==1.17.2
-django-labeller==0.3.2
 django-libsass==0.9
 django-sass-processor==1.2.2
 django-seed==0.3.1
@@ -28,7 +27,6 @@ djhtml==3.0.6
 drf-nested-routers==0.93.5
 drf-spectacular==0.27.1
 drf-spectacular-sidecar==2024.1.1
-Faker==23.1.0
 filelock==3.13.1
 Flask==3.0.1
 fonttools==4.48.1
@@ -114,5 +112,6 @@ tzdata==2024.1
 uritemplate==4.1.1
 urllib3==2.1.0
 Werkzeug==3.0.1
+whitenoise==6.6.0
 wrapt==1.16.0
 yarl==1.9.4

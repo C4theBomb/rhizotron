@@ -2,6 +2,7 @@ FROM python:3.10
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS_MODULE rhizotron.settings.prod
 
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 

@@ -69,38 +69,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'standard'
-        },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/run.log',
-            'formatter': 'standard'
-        },
-    },
-    'formatters': {
-        'standard': {
-            'format': '%(asctime)s %(levelname)s %(module)s: %(message)s'
-        }
-    },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO'
-    },
-    'loggers': {
-        'main': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-        }
-    }
-}
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
