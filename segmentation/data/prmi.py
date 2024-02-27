@@ -17,7 +17,8 @@ class PRMIDataset(Dataset):
         self.img_dir = img_dir
         self.mask_dir = mask_dir
         self.transform = v2.Compose([
-            v2.RandomResizedCrop(200, scale=(min_zoom, 1.0), ratio=(1, 1), antialias=None),
+            v2.RandomResizedCrop(160, scale=(min_zoom, 1.0),
+                                 ratio=(1, 1), antialias=None),
             v2.RandomHorizontalFlip(p=0.5)
         ])
         self.grayscale_mask = grayscale_mask
@@ -40,8 +41,10 @@ class PRMIDataset(Dataset):
         return image
 
     def get_mask(self, filename) -> np.ndarray:
-        filename = os.path.join(os.path.dirname(filename), "GT_" + os.path.basename(filename))
-        filename = filename.replace(self.img_dir, self.mask_dir).replace('.jpg', '.png')
+        filename = os.path.join(os.path.dirname(
+            filename), "GT_" + os.path.basename(filename))
+        filename = filename.replace(
+            self.img_dir, self.mask_dir).replace('.jpg', '.png')
 
         mask = cv2.imread(filename)
         return mask
@@ -56,8 +59,8 @@ class PRMIDataset(Dataset):
         if self.transform:
             image, mask = self.transform(image, mask)
         else:
-            image = F.resize(image, 200, antialias=None)
-            mask = F.resize(mask, 200, antialias=None)
+            image = F.resize(image, 160, antialias=None)
+            mask = F.resize(mask, 160, antialias=None)
 
         if self.grayscale_mask:
             mask = F.to_grayscale(mask)

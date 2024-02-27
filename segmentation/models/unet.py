@@ -48,6 +48,8 @@ class UNet(nn.Module):
 
         self.maxpool = nn.MaxPool2d(2)
 
+        self.dropout = nn.Dropout2d(dropout)
+
     def pad_input(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[int, int]]:
         height = int(16 * round(x.shape[2] / 16))
         width = int(16 * round(x.shape[3] / 16))
@@ -64,41 +66,41 @@ class UNet(nn.Module):
 
         x1 = self.down_step1(x)
         x1_pooled = self.maxpool(x1)
-        x1_pooled = nn.Dropout2d(0.2)(x1_pooled)
+        x1_pooled = self.dropout(x1_pooled)
 
         x2 = self.down_step2(x1_pooled)
         x2_pooled = self.maxpool(x2)
-        x2_pooled = nn.Dropout2d(0.2)(x2_pooled)
+        x2_pooled = self.dropout(x2_pooled)
 
         x3 = self.down_step3(x2_pooled)
         x3_pooled = self.maxpool(x3)
-        x3_pooled = nn.Dropout2d(0.2)(x3_pooled)
+        x3_pooled = self.dropout(x3_pooled)
 
         x4 = self.down_step4(x3_pooled)
         x4_pooled = self.maxpool(x4)
-        x4_pooled = nn.Dropout2d(0.2)(x4_pooled)
+        x4_pooled = self.dropout(x4_pooled)
 
         encoder_output = checkpoint(
             self.encoder_output, x4_pooled, use_reentrant=False)
 
         y4 = self.up_step1(encoder_output)
         y4 = torch.cat([x4, y4], dim=1)
-        y4 = nn.Dropout2d(0.2)(y4)
+        y4 = self.dropout(y4)
         y4 = self.up_step2(y4)
 
         y3 = self.up_step3(y4)
         y3 = torch.cat([x3, y3], dim=1)
-        y3 = nn.Dropout2d(0.2)(y3)
+        y3 = self.dropout(y3)
         y3 = self.up_step4(y3)
 
         y2 = self.up_step5(y3)
         y2 = torch.cat([x2, y2], dim=1)
-        y2 = nn.Dropout2d(0.2)(y2)
+        y2 = self.dropout(y2)
         y2 = self.up_step6(y2)
 
         y1 = self.up_step7(y2)
         y1 = torch.cat([x1, y1], dim=1)
-        y1 = nn.Dropout2d(0.2)(y1)
+        y1 = self.dropout(y1)
         y1 = self.up_step8(y1)
 
         output = self.decoder_output(y1)

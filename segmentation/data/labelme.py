@@ -15,7 +15,8 @@ from segmentation.utils.file_management import get_image_filenames
 class LabelmeDataset(Dataset):
     def __init__(self, dataset_dir: str, min_zoom: float = 0.5, grayscale_mask: bool = True):
         self.transform = v2.Compose([
-            v2.RandomResizedCrop(400, scale=(min_zoom, 1.0), ratio=(1, 1), antialias=None),
+            v2.RandomResizedCrop(400, scale=(min_zoom, 1.0),
+                                 ratio=(1, 1), antialias=None),
             v2.RandomHorizontalFlip(p=0.5),
             v2.RandomVerticalFlip(p=0.5)
         ])
@@ -28,8 +29,6 @@ class LabelmeDataset(Dataset):
     def get_image(self, filename: str) -> np.ndarray:
         image = cv2.imread(filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        image = image[:image.shape[0] - 2, :image.shape[1]]
 
         return image
 
