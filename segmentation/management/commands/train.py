@@ -17,17 +17,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument('model_name', type=str, help='Name of the model')
-        parser.add_argument('dataset_dir', type=str,
-                            help='Directory of the dataset')
+        parser.add_argument('dataset_dir', type=str, help='Directory of the dataset')
 
-        parser.add_argument('--train', action='store_true',
-                            help='Train the model')
-        parser.add_argument('--test', action='store_true',
-                            help='Test the model')
+        parser.add_argument('--train', action='store_true', help='Train the model')
+        parser.add_argument('--test', action='store_true', help='Test the model')
         parser.add_argument('--model', type=ModelType.from_string, default=ModelType.UNET,
                             choices=list(ModelType), help='Model to use')
-        parser.add_argument('--dataset_type', type=DatasetType.from_string, default=DatasetType.LABELME,
-                            choices=list(DatasetType), help='Type of dataset')
+        parser.add_argument('--dataset_type', type=DatasetType.from_string,
+                            default=DatasetType.LABELME, choices=list(DatasetType), help='Type of dataset')
 
         parser.add_argument('--learning_rate', type=float, default=1e-2, help='Learning rate')
         parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate')
@@ -38,7 +35,8 @@ class Command(BaseCommand):
         parser.add_argument('--patience', type=int, default=50, help='Patience for early stopping')
         parser.add_argument('--num_workers', type=int, default=2, help='Number of workers')
         parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint to load')
-        parser.add_argument('--resume_last', action='store_true', default=False, help='Resume training from last checkpoint')
+        parser.add_argument('--resume_last', action='store_true', default=False,
+                            help='Resume training from last checkpoint')
 
         parser.add_argument('--cuda', action='store_true', help='Use CUDA')
 
@@ -61,7 +59,12 @@ class Command(BaseCommand):
                                          options['batch_size'], options['num_workers'], options['prefetch_factor'])
 
         checkpoint_callback = ModelCheckpoint(
-            filename='{epoch}-{step}-{val_loss:0.2f}', dirpath=f'segmentation/checkpoints/{options["model_name"]}', monitor='val_loss', save_top_k=5, mode='min', save_last=True)
+            filename='{epoch}-{step}-{val_loss:0.2f}',
+            dirpath=f'segmentation/checkpoints/{options["model_name"]}',
+            monitor='val_loss',
+            save_top_k=5,
+            mode='min',
+            save_last=True)
 
         trainer = L.Trainer(
             accelerator='gpu' if device.type == 'cuda' else 'cpu',

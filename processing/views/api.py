@@ -76,7 +76,8 @@ class PictureViewSet(viewsets.ModelViewSet):
         serializer.save(dataset=dataset)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(summary='Delete multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
+    @extend_schema(summary='Delete multiple images',
+                   parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
     def bulk_destroy(self, request: HttpRequest, dataset_pk: int = None, format: str = None) -> Response:
         ids = [int(id) for id in request.query_params.get('ids').split(',')]
         images = self.queryset.filter(dataset=dataset_pk, id__in=ids)
@@ -88,7 +89,8 @@ class PictureViewSet(viewsets.ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @extend_schema(tags=['masks'], summary='Predict masks for multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)], responses={200: MaskSerializer(many=True)})
+    @extend_schema(tags=['masks'], summary='Predict masks for multiple images', parameters=[OpenApiParameter(
+        name='ids', type=str, location='query', required=True)], responses={200: MaskSerializer(many=True)})
     @action(detail=False, methods=['post'], url_path='predict', serializer_class=MaskSerializer)
     def bulk_predict(self, request: HttpRequest, dataset_pk: int = None) -> Response:
         image_ids = request.query_params.get('ids')
@@ -128,7 +130,8 @@ class PictureViewSet(viewsets.ModelViewSet):
 
         return Response(MaskSerializer(masks, many=True).data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(tags=['masks'], summary='Delete predictions for multiple images', parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
+    @extend_schema(tags=['masks'], summary='Delete predictions for multiple images',
+                   parameters=[OpenApiParameter(name='ids', type=str, location='query', required=True)])
     @bulk_predict.mapping.delete
     def bulk_destroy_predictions(self, request: HttpRequest, dataset_pk: int = None) -> Response:
         image_ids = request.query_params.get('ids')
@@ -200,7 +203,8 @@ class MaskViewSet(viewsets.ModelViewSet):
         serializer.save(picture=original, image=mask, **metrics)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def partial_update(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> Response:
+    def partial_update(self, request: HttpRequest, dataset_pk: int = None,
+                       image_pk: int = None, pk: int = None) -> Response:
         original_mask = Mask.objects.get(pk=pk)
 
         serializer = self.get_serializer(data=request.data, partial=True)
@@ -266,9 +270,11 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY}, summary='Export a mask to LabelMe')
+    @extend_schema(responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY},
+                   summary='Export a mask to LabelMe')
     @action(detail=True, methods=['get'], url_path='labelme')
-    def export_labelme(self, request: HttpRequest, dataset_pk: int = None, image_pk: int = None, pk: int = None) -> HttpResponse:
+    def export_labelme(self, request: HttpRequest, dataset_pk: int = None,
+                       image_pk: int = None, pk: int = None) -> HttpResponse:
         prediction = Mask.objects.get(pk=pk)
 
         image = PILImage.open(prediction.picture.image)

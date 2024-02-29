@@ -14,7 +14,7 @@ def predict(model: nn.Module, image_path: str, area_threshold: int = 15) -> PILI
     Args:
         model (nn.Module): The segmentation model.
         image_path (str): The path to the input image.
-        area_threshold (int, optional): The threshold for filtering small regions in the segmentation mask. 
+        area_threshold (int, optional): The threshold for filtering small regions in the segmentation mask.
             Defaults to 15.
 
     Returns:

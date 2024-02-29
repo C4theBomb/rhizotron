@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandParser
 
 from segmentation.utils import file_management
 
+
 class Command(BaseCommand):
     help = 'Combine images of individual layers into composite images.'
 
@@ -61,7 +62,8 @@ class Command(BaseCommand):
                 if not os.path.exists(f'./output/concatenated/{name[0].strftime("%m%d%Y")}'):
                     os.makedirs(f'./output/concatenated/{name[0].strftime("%m%d%Y")}')
                 cv2.imwrite(
-                    f'./output/concatenated/{name[0].strftime("%m%d%Y")}/{name[2]}_T{name[1]}_L{min_level}-{max_level}.png', image)
+                    f'./output/concatenated/{name[0].strftime("%m%d%Y")}/{name[2]}_T{name[1]}_L{min_level}-{max_level}.png',
+                    image)
             else:
                 if not os.path.exists(f'{options['output']}/{name[0].strftime("%m%d%Y")}'):
                     os.makedirs(f'{options['output']}/{name[0].strftime("%m%d%Y")}')

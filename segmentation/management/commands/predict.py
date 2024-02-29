@@ -41,31 +41,25 @@ class Command(BaseCommand):
         return image
 
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument('target', type=str, default=None,
-                            help='Target directory')
-        parser.add_argument(
-            '--output', type=str, default='segmentation/output', help='Output directory')
-        parser.add_argument('--recursive', action='store_true',
-                            help='Recursively search for images')
-
-        parser.add_argument('--model', type=ModelType.from_string,
-                            default=ModelType.UNET, choices=list(ModelType), help='Model to use')
-        parser.add_argument('--checkpoint', type=str,
-                            default=None, help='Checkpoint to load')
+        parser.add_argument('target', type=str, default=None, help='Target directory')
+        parser.add_argument('--output', type=str, default='segmentation/output', help='Output directory')
+        parser.add_argument('--recursive', action='store_true', help='Recursively search for images')
 
         parser.add_argument(
-            '--save_mask', action='store_true', help='Save masks')
-        parser.add_argument(
-            '--save_comparison', action='store_true', help='Compare images and masks')
-        parser.add_argument('--save_labelme', action='store_true',
-                            help='Save masks in labelme format')
+            '--model',
+            type=ModelType.from_string,
+            default=ModelType.UNET,
+            choices=list(ModelType),
+            help='Model to use')
+        parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint to load')
 
-        parser.add_argument('--size', type=int, default=None,
-                            help='Size to resize images to')
-        parser.add_argument('--scaling_factor', type=float,
-                            default=0.2581, help='Scaling factor for the images')
-        parser.add_argument('--threshold_area', type=int,
-                            default=15, help='Threshold area for the mask')
+        parser.add_argument('--save_mask', action='store_true', help='Save masks')
+        parser.add_argument('--save_comparison', action='store_true', help='Compare images and masks')
+        parser.add_argument('--save_labelme', action='store_true', help='Save masks in labelme format')
+
+        parser.add_argument('--size', type=int, default=None, help='Size to resize images to')
+        parser.add_argument('--scaling_factor', type=float, default=0.2581, help='Scaling factor for the images')
+        parser.add_argument('--threshold_area', type=int, default=15, help='Threshold area for the mask')
 
         parser.add_argument('--cuda', action='store_true', help='Use CUDA')
 
@@ -93,11 +87,16 @@ class Command(BaseCommand):
         model.eval()
         model.to(device)
 
-        image_filenames = file_management.get_image_filenames(
-            options['target'], options['recursive'])
+        image_filenames = file_management.get_image_filenames(options['target'], options['recursive'])
 
-        measurements = pd.DataFrame(columns=[
-                                    'image', 'root_count', 'average_root_diameter', 'total_root_length', 'total_root_area', 'total_root_volume'])
+        measurements = pd.DataFrame(
+            columns=[
+                'image',
+                'root_count',
+                'average_root_diameter',
+                'total_root_length',
+                'total_root_area',
+                'total_root_volume'])
 
         try:
             for index, image_filename in enumerate(image_filenames):
@@ -151,8 +150,15 @@ class Command(BaseCommand):
                     original_image = cv2.cvtColor(
                         original_image, cv2.COLOR_RGB2BGR)
 
-                    cv2.imwrite(os.path.join(options['output'], 'labelme', os.path.relpath(
-                        os.path.dirname(image_filename), options['target']), os.path.basename(image_filename)), original_image)
+                    cv2.imwrite(
+                        os.path.join(
+                            options['output'],
+                            'labelme',
+                            os.path.relpath(
+                                os.path.dirname(image_filename),
+                                options['target']),
+                            os.path.basename(image_filename)),
+                        original_image)
 
                     labelme_json = masks.to_labelme(
                         os.path.basename(image_filename), mask)
@@ -162,7 +168,7 @@ class Command(BaseCommand):
                         f.write(labelme_json)
 
                 measurements.loc[index] = {'image': image_filename,
-                                        **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
+                                           **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
 
                 logging.info(
                     f'Completed image {index + 1} of {len(image_filenames)}: {image_filename}')
@@ -171,4 +177,4 @@ class Command(BaseCommand):
         finally:
             measurements = measurements.round(4)
             measurements.to_csv(os.path.join(options['output'], 'measurements.csv'), index=False)
-            self.logger.info(f'Saved measurements to {options['output']}/measurements.csv')
+            self.logger.info(f'Saved measurements to {options["output"]}/measurements.csv')

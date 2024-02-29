@@ -14,8 +14,7 @@ def find_root_count(image: np.ndarray) -> int:
     int: The number of roots in the image.
     """
 
-    image_contours, _ = cv2.findContours(
-        image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
+    image_contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1)
 
     return len(image_contours)
 

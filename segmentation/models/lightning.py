@@ -8,9 +8,10 @@ import lightning as L
 from .metrics import Dice, Accuracy
 from .unet import UNet
 
+
 class ModelType(Enum):
     UNET = UNet
-    
+
     def __str__(self) -> str:
         return self.value.__name__.lower()
 
@@ -22,12 +23,13 @@ class ModelType(Enum):
             case _:
                 raise ValueError(f'Invalid model type: {s}')
 
+
 class TrainingModel(L.LightningModule):
     def __init__(self, model_type: ModelType, learning_rate: float = 1e-1, dropout: float = 0.2):
         super().__init__()
 
         self.learning_rate = learning_rate
-        
+
         self.model = model_type.value(3, 1, dropout=dropout)
 
         self.loss = Dice()

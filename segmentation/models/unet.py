@@ -43,8 +43,7 @@ class UNet(nn.Module):
         self.up_step7 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.up_step8 = CNNBlock(128, 64)
 
-        self.decoder_output = nn.Conv2d(
-            64, out_channels, kernel_size=1, stride=1)
+        self.decoder_output = nn.Conv2d(64, out_channels, kernel_size=1, stride=1)
 
         self.maxpool = nn.MaxPool2d(2)
 

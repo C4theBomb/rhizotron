@@ -35,7 +35,7 @@ class Command(BaseCommand):
 
         model.load_state_dict(model_weights)
         model.eval()
-        
+
         output_path = Path(options['output'], '{}_{}'.format(options["model"], options["name"])).with_suffix('.pth')
 
         torch.save(model.state_dict(), output_path)

@@ -23,11 +23,18 @@ class Command(BaseCommand):
     def handle(self, *args, **options) -> None:
         if not os.path.exists(options['output']):
             os.makedirs(options['output'])
-        
+
         image_filenames = file_management.get_image_filenames(options['target'], options['recursive'])
-        
-        measurements = pd.DataFrame(columns=[
-                                    'image', 'layer', 'root_count', 'average_root_diameter', 'total_root_length', 'total_root_area', 'total_root_volume'])
+
+        measurements = pd.DataFrame(
+            columns=[
+                'image',
+                'layer',
+                'root_count',
+                'average_root_diameter',
+                'total_root_length',
+                'total_root_area',
+                'total_root_volume'])
 
         try:
             for index, image_filename in enumerate(image_filenames):
@@ -58,4 +65,4 @@ class Command(BaseCommand):
         finally:
             measurements = measurements.round(4)
             measurements.to_csv(f'{options['output']}/layered_measurements.csv', index=False)
-            self.logger.info(f'Saved measurements to {options['output']}/layered_measurements.csv')
+            self.logger.info(f'Saved measurements to {options["output"]}/layered_measurements.csv')

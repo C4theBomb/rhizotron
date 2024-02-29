@@ -15,8 +15,7 @@ from segmentation.utils.file_management import get_image_filenames
 class LabelmeDataset(Dataset):
     def __init__(self, dataset_dir: str, min_zoom: float = 0.5, grayscale_mask: bool = True):
         self.transform = v2.Compose([
-            v2.RandomResizedCrop(400, scale=(min_zoom, 1.0),
-                                 ratio=(1, 1), antialias=None),
+            v2.RandomResizedCrop(400, scale=(min_zoom, 1.0), ratio=(1, 1), antialias=None),
             v2.RandomHorizontalFlip(p=0.5),
             v2.RandomVerticalFlip(p=0.5)
         ])
@@ -34,8 +33,7 @@ class LabelmeDataset(Dataset):
 
     def get_mask(self, filename: str, shape: tuple = (755, 850, 3)) -> np.ndarray:
         mask = np.zeros(shape, dtype=np.uint8)
-        mask_json_filename = filename.replace(
-            'images', 'masks').replace('.PNG', '.json')
+        mask_json_filename = filename.replace('images', 'masks').replace('.PNG', '.json')
         with open(mask_json_filename, 'r') as f:
             mask_json = json.load(f)
         polygons = [shape['points'] for shape in mask_json['shapes']]
