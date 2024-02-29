@@ -1,4 +1,6 @@
 aiohttp==3.9.3
+Django==5.0.2
+django-htmx==1.17.2
 django-rest-framework==0.1.0
 django-sass-processor==1.4
 drf-nested-routers==0.93.5
@@ -7,6 +9,7 @@ drf-spectacular-sidecar==2024.2.1
 ipykernel==6.29.3
 matplotlib==3.8.3
 mysqlclient==2.2.4
+numpy==1.26.4
 opencv-python==4.9.0.80
 pandas==2.2.1
 pip==24.0
@@ -14,6 +17,7 @@ pipdeptree==2.15.1
 pyarrow==15.0.0
 pytorch-lightning==2.2.0.post0
 rich==13.7.1
+scikit-image==0.22.0
 tensorboard==2.16.2
 torchaudio==2.2.1
 torchvision==0.17.1
