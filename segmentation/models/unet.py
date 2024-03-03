@@ -49,7 +49,7 @@ class UNet(nn.Module):
 
         self.dropout = nn.Dropout2d(dropout)
 
-    def pad_input(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[int, int]]:
+    def _pad_input(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[int, int]]:
         height = int(16 * round(x.shape[2] / 16))
         width = int(16 * round(x.shape[3] / 16))
 
@@ -57,11 +57,11 @@ class UNet(nn.Module):
 
         return resized, (x.shape[2], x.shape[3])
 
-    def unpad_output(self, x: torch.Tensor, original_dims: tuple[int, int]) -> torch.Tensor:
+    def _unpad_output(self, x: torch.Tensor, original_dims: tuple[int, int]) -> torch.Tensor:
         return F_image.resize(x, original_dims, antialias=None)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x, original_dims = self.pad_input(x)
+        x, original_dims = self._pad_input(x)
 
         x1 = self.down_step1(x)
         x1_pooled = self.maxpool(x1)
@@ -106,6 +106,6 @@ class UNet(nn.Module):
 
         output = F.sigmoid(output)
 
-        output = self.unpad_output(output, original_dims)
+        output = self._unpad_output(output, original_dims)
 
         return output

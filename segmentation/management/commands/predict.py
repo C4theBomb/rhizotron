@@ -74,7 +74,7 @@ class Command(BaseCommand):
         logging.info(f'Running with arguments: {options}')
         logging.info(f'Using device: {device}')
 
-        model = options['model'].value(3, 1)
+        model = options['model'].get_model(3, 1)
 
         checkpoint = torch.load(options['checkpoint'])
 

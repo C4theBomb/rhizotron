@@ -6,22 +6,7 @@ from torch.optim import Adam
 import lightning as L
 
 from .metrics import Dice, Accuracy
-from .unet import UNet
-
-
-class ModelType(Enum):
-    UNET = UNet
-
-    def __str__(self) -> str:
-        return self.value.__name__.lower()
-
-    @staticmethod
-    def from_string(s: str) -> 'ModelType':
-        match s.lower():
-            case 'unet':
-                return ModelType.UNET
-            case _:
-                raise ValueError(f'Invalid model type: {s}')
+from .model_types import ModelType
 
 
 class TrainingModel(L.LightningModule):
@@ -30,7 +15,7 @@ class TrainingModel(L.LightningModule):
 
         self.learning_rate = learning_rate
 
-        self.model = model_type.value(3, 1, dropout=dropout)
+        self.model = model_type.get_model(3, 1, dropout=dropout)
 
         self.loss = Dice()
         self.accuracy = Accuracy()
