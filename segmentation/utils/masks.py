@@ -3,26 +3,6 @@ import numpy as np
 import cv2
 
 
-def to_comparison(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    """
-    Create a comparison image from an image and its mask.
-
-    Parameters:
-        image (np.ndarray): The original image.
-        mask (np.ndarray): The mask image.
-
-    Returns:
-        np.ndarray: The comparison image.
-    """
-
-    image = np.array(image)
-    mask = np.array(mask)
-
-    comparison = cv2.addWeighted(image, 0.5, mask, 0.5, 0)
-
-    return comparison
-
-
 def to_labelme(image_filename: str, image: np.ndarray) -> str:
     """
     Convert an image with contours to a LabelMe JSON string.

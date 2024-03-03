@@ -47,7 +47,7 @@ class Command(BaseCommand):
 
         parser.add_argument(
             '--model',
-            type=ModelType.from_string,
+            type=ModelType,
             default=ModelType.UNET,
             choices=list(ModelType),
             help='Model to use')

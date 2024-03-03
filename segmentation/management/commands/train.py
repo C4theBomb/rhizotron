@@ -21,9 +21,9 @@ class Command(BaseCommand):
 
         parser.add_argument('--train', action='store_true', help='Train the model')
         parser.add_argument('--test', action='store_true', help='Test the model')
-        parser.add_argument('--model', type=ModelType.from_string, default=ModelType.UNET,
+        parser.add_argument('--model', type=ModelType, default=ModelType.UNET,
                             choices=list(ModelType), help='Model to use')
-        parser.add_argument('--dataset_type', type=DatasetType.from_string,
+        parser.add_argument('--dataset_type', type=DatasetType,
                             default=DatasetType.LABELME, choices=list(DatasetType), help='Type of dataset')
 
         parser.add_argument('--learning_rate', type=float, default=1e-2, help='Learning rate')
@@ -49,12 +49,12 @@ class Command(BaseCommand):
         logging.info(f'Running with arguments: {options}')
         logging.info(f'Using device: {device}')
 
-        logging.info(f'Using model: {options["model"].value.__name__}')
+        logging.info(f'Using model: {options["model"].value}')
         model = TrainingModel(
             options['model'], learning_rate=options['learning_rate'], dropout=options['dropout'])
 
         logging.info(
-            f'Using dataset: {options["dataset_type"].value.__name__}')
+            f'Using dataset: {options["dataset_type"].value}')
         data_module = TrainingDataModule(options['dataset_dir'], options['dataset_type'],
                                          options['batch_size'], options['num_workers'], options['prefetch_factor'])
 

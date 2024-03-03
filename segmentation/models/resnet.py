@@ -116,7 +116,7 @@ class ResNet(nn.Module):
         self.up_step5 = nn.ConvTranspose2d(128, 128, kernel_size=2, stride=2)
         self.up_step6 = CNNBlock(128 + 64 * self.expansion, 64)
         self.up_step7 = nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2)
-        self.up_step8 = CNNBlock(128, self.out_channels)
+        self.up_step8 = CNNBlock(128, out_channels)
 
         self.dropout = nn.Dropout2d(dropout)
 
@@ -171,10 +171,9 @@ class ResNet(nn.Module):
         x4 = self.layer3(x3)
         x4 = self.dropout(x4)
 
-        x5 = self.layer4(x4)
-        x5 = self.dropout(x5)
+        encoder_output = checkpoint(self.layer4, x4, use_reentrant=False)
 
-        y4 = self.up_step1(x5)
+        y4 = self.up_step1(encoder_output)
         y4 = torch.cat([x4, y4], dim=1)
         y4 = self.dropout(y4)
         y4 = self.up_step2(y4)
@@ -194,6 +193,8 @@ class ResNet(nn.Module):
         y1 = self.dropout(y1)
         y1 = self.up_step8(y1)
 
-        output = self._unpad_output(y1, original_dims)
+        output = F.sigmoid(y1)
+
+        output = self._unpad_output(output, original_dims)
 
         return output
