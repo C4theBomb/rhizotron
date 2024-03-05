@@ -42,7 +42,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument('target', type=str, default=None, help='Target directory')
-        parser.add_argument('--output', type=str, default='segmentation/output', help='Output directory')
+        parser.add_argument('--output', type=str, default='output', help='Output directory')
         parser.add_argument('--recursive', action='store_true', help='Recursively search for images')
 
         parser.add_argument(
