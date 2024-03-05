@@ -64,5 +64,5 @@ class Command(BaseCommand):
             pass
         finally:
             measurements = measurements.round(4)
-            measurements.to_csv(f'{options['output']}/layered_measurements.csv', index=False)
+            measurements.to_csv(f'{options["output"]}/layered_measurements.csv', index=False)
             self.logger.info(f'Saved measurements to {options["output"]}/layered_measurements.csv')

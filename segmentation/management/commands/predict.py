@@ -70,9 +70,9 @@ class Command(BaseCommand):
         device = torch.device(
             "cuda" if options['cuda'] and torch.cuda.is_available() else "cpu")
         torch.set_float32_matmul_precision('medium')
-        logging.info(f'Using PyTorch version: {torch.__version__}')
-        logging.info(f'Running with arguments: {options}')
-        logging.info(f'Using device: {device}')
+        self.logger.info(f'Using PyTorch version: {torch.__version__}')
+        self.logger.info(f'Running with arguments: {options}')
+        self.logger.info(f'Using device: {device}')
 
         model = options['model'].get_model(3, 1)
 
@@ -100,7 +100,7 @@ class Command(BaseCommand):
 
         try:
             for index, image_filename in enumerate(image_filenames):
-                logging.info(
+                self.logger.info(
                     f'Running image {index + 1} of {len(image_filenames)}: {image_filename}')
 
                 original_image = self.get_image(image_filename, options['size'])
@@ -170,7 +170,7 @@ class Command(BaseCommand):
                 measurements.loc[index] = {'image': image_filename,
                                            **root_analysis.calculate_metrics(mask, options['scaling_factor'])}
 
-                logging.info(
+                self.logger.info(
                     f'Completed image {index + 1} of {len(image_filenames)}: {image_filename}')
         except KeyboardInterrupt:
             pass

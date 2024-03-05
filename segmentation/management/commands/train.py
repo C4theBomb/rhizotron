@@ -45,15 +45,15 @@ class Command(BaseCommand):
         device = torch.device(
             "cuda" if options['cuda'] and torch.cuda.is_available() else "cpu")
         torch.set_float32_matmul_precision('medium')
-        logging.info(f'Using PyTorch version: {torch.__version__}')
-        logging.info(f'Running with arguments: {options}')
-        logging.info(f'Using device: {device}')
+        self.logger.info(f'Using PyTorch version: {torch.__version__}')
+        self.logger.info(f'Running with arguments: {options}')
+        self.logger.info(f'Using device: {device}')
 
-        logging.info(f'Using model: {options["model"].value}')
+        self.logger.info(f'Using model: {options["model"].value}')
         model = TrainingModel(
             options['model'], learning_rate=options['learning_rate'], dropout=options['dropout'])
 
-        logging.info(
+        self.logger.info(
             f'Using dataset: {options["dataset_type"].value}')
         data_module = TrainingDataModule(options['dataset_dir'], options['dataset_type'],
                                          options['batch_size'], options['num_workers'], options['prefetch_factor'])
@@ -83,14 +83,14 @@ class Command(BaseCommand):
             ]
         )
 
-        logging.info('Starting training')
+        self.logger.info('Starting training')
         if options['train']:
             model.train()
 
             ckpt_path = 'last' if options['resume_last'] else None
             trainer.fit(model, data_module, ckpt_path=ckpt_path)
 
-        logging.info('Starting testing')
+        self.logger.info('Starting testing')
         if options['test']:
             model.eval()
 
@@ -98,4 +98,4 @@ class Command(BaseCommand):
             with torch.no_grad():
                 trainer.test(model, data_module, ckpt_path=ckpt_path)
 
-        logging.info('Done')
+        self.logger.info('Done')

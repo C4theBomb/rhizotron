@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument('target', type=str, help='Target directory')
-        parser.add_argument('--output', type=str, default='output', help='Output directory')
+        parser.add_argument('--output', type=str, default='output/concat', help='Output directory')
         parser.add_argument('--recursive', action='store_true', help='Recursively search for images')
 
     def handle(self, *args, **options) -> None:
@@ -58,10 +58,11 @@ class Command(BaseCommand):
 
             image = np.concatenate(images, axis=1)
 
-            if not os.path.exists(f'{options['output']}/{name[0].strftime("%m%d%Y")}'):
-                os.makedirs(f'{options['output']}/{name[0].strftime("%m%d%Y")}')
+            if not os.path.exists(f'{options["output"]}/{name[0].strftime("%m%d%Y")}'):
+                os.makedirs(f'{options["output"]}/{name[0].strftime("%m%d%Y")}')
             cv2.imwrite(
-                f'{options['output']}/{name[0].strftime("%m%d%Y")}/{name[2]}_T{name[1]}_L{min_level}-{max_level}.png', image)
+                f'{options["output"]}/{name[0].strftime("%m%d%Y")}/{name[2]}_T{name[1]}_L{min_level}-{max_level}.png',
+                image)
 
             self.logger.info(
                 f'Completed image {group_index + 1} of {len(groups)}: {name[0].strftime("%m%d%Y")}, Tube {name[1]}')
