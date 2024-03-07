@@ -1,8 +1,9 @@
-from rest_framework.serializers import Serializer, ModelSerializer, ImageField, FloatField, IntegerField, PrimaryKeyRelatedField, FileField, CharField
-from processing.models import Dataset, Picture, Mask
+from rest_framework import serializers
+from rest_framework.serializers import ImageField, FloatField, IntegerField, PrimaryKeyRelatedField, FileField, CharField
+from processing.models import Dataset, Picture, Mask, Model
 
 
-class DatasetSerializer(ModelSerializer):
+class DatasetSerializer(serializers.ModelSerializer):
     pictures = PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
@@ -11,7 +12,7 @@ class DatasetSerializer(ModelSerializer):
         read_only_fields = ['created', 'updated', 'owner', 'pictures']
 
 
-class PictureSerializer(ModelSerializer):
+class PictureSerializer(serializers.ModelSerializer):
     image = ImageField()
 
     class Meta:
@@ -20,7 +21,7 @@ class PictureSerializer(ModelSerializer):
         read_only_fields = ['created', 'updated', 'dataset']
 
 
-class MaskSerializer(ModelSerializer):
+class MaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mask
         fields = '__all__'
@@ -32,17 +33,7 @@ class MaskSerializer(ModelSerializer):
         }
 
 
-class AnalysisSerializer(Serializer):
-    image = ImageField(required=False)
-    scaling_factor = FloatField(required=False)
-
-
-class SegmentationSerializer(Serializer):
-    image = ImageField(required=False)
-    threshold = IntegerField(required=False, default=25)
-
-
-class LabelMeSerializer(ModelSerializer):
+class LabelMeSerializer(serializers.ModelSerializer):
     json = FileField()
 
     class Meta:
@@ -56,3 +47,26 @@ class LabelMeSerializer(ModelSerializer):
 
     def create(self, validated_data) -> Mask:
         return Mask.objects.create(image=validated_data['image'], picture=validated_data['picture'], threshold=0)
+
+
+class ModelSerializer(serializers.ModelSerializer):
+    model_weights = FileField()
+
+    class Meta:
+        model = Model
+        fields = '__all__'
+        read_only_fields = ['created', 'updated', 'owner']
+        write_only_fields = ['model_weights', 'model_type']
+        extra_kwargs = {
+            'model_weights': {'required': True},
+        }
+
+
+class AnalysisSerializer(serializers.Serializer):
+    image = ImageField(required=False)
+    scaling_factor = FloatField(required=False)
+
+
+class SegmentationSerializer(serializers.Serializer):
+    image = ImageField(required=False)
+    threshold = IntegerField(required=False, default=25)

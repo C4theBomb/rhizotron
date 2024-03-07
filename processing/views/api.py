@@ -15,8 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
-from processing.models import Dataset, Picture, Mask
-from processing.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer
+from processing.models import Dataset, Picture, Mask, Model
+from processing.serializers import DatasetSerializer, PictureSerializer, MaskSerializer, LabelMeSerializer, ModelSerializer
 from processing.permissions import IsOwnerOrReadOnly
 from processing.apps import ProcessingConfig
 from segmentation import predict, masks, calculate_metrics
@@ -122,7 +122,7 @@ class PictureViewSet(viewsets.ModelViewSet):
             mask_byte_arr = io.BytesIO()
             mask.save(mask_byte_arr, format='PNG')
 
-            mask = File(mask_byte_arr, name=f'{image.file_basename}_mask.png')
+            mask = File(mask_byte_arr, name=f'{image.filename_noext}_mask.png')
             masks.append(Mask(picture=image, image=mask,
                          threshold=area_threshold, **metrics))
 
@@ -153,7 +153,10 @@ class PictureViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self) -> QuerySet[Picture]:
-        return self.queryset.filter(dataset=self.kwargs['dataset_pk'])
+        if self.request.user.is_anonymous:
+            return self.queryset.filter(dataset=self.kwargs['dataset_pk'], public=True)
+
+        return self.queryset.filter(Q(owner=self.user) | Q(public=True), dataset=self.kwargs['dataset_pk'])
 
 
 @extend_schema(tags=['masks'])
@@ -295,14 +298,46 @@ class MaskViewSet(viewsets.ModelViewSet):
 
         response = HttpResponse(
             outfile.getvalue(), content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename={prediction.picture.file_basename}_labelme.zip'
+        response['Content-Disposition'] = f'attachment; filename={prediction.picture.filename_noext}_labelme.zip'
 
         return response
 
     def get_queryset(self) -> QuerySet[Mask]:
-        return self.queryset.filter(picture=self.kwargs['image_pk'])
+        if self.user.is_anonymous:
+            return self.queryset.filter(picture=self.kwargs['image_pk'], public=True)
+
+        return self.queryset.filter(Q(owner=self.user) | Q(public=True), picture=self.kwargs['image_pk'],)
 
     def get_serializer_class(self) -> Serializer:
         if self.action == 'create_labelme':
             return LabelMeSerializer
         return MaskSerializer
+
+
+@extend_schema(tags=['models'])
+@extend_schema_view(
+    list=extend_schema(summary='List all models'),
+    create=extend_schema(summary='Upload a new model'),
+    retrieve=extend_schema(summary='Retrieve a model'),
+    partial_update=extend_schema(summary='Update a model'),
+    destroy=extend_schema(summary='Delete a model')
+)
+class ModelViewSet(viewsets.ModelViewSet):
+    serializer_class = ModelSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = Model.objects.all()
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def create(self, request: HttpRequest) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(owner=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def get_queryset(self) -> QuerySet[Model]:
+        if self.request.user.is_anonymous:
+            return self.queryset.filter(public=True)
+
+        return self.queryset.filter(Q(owner=self.request.user) | Q(public=True))

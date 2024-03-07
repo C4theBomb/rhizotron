@@ -26,7 +26,7 @@ class Picture(models.Model):
         return os.path.basename(self.image.name)
 
     @property
-    def file_basename(self) -> str:
+    def filename_noext(self) -> str:
         return os.path.splitext(self.filename)[0]
 
     @property
@@ -57,7 +57,7 @@ class Mask(models.Model):
         return os.path.basename(self.image.name)
 
     @property
-    def file_basename(self) -> str:
+    def filename_noext(self) -> str:
         return os.path.splitext(self.filename)[0]
 
     @property
@@ -67,3 +67,30 @@ class Mask(models.Model):
     @property
     def public(self) -> bool:
         return self.picture.public
+
+
+class Model(models.Model):
+    UNET = 'unet'
+    RESNET18 = 'resnet18'
+    RESNET34 = 'resnet34'
+    RESNET50 = 'resnet50'
+    RESNET101 = 'resnet101'
+    RESNET152 = 'resnet152'
+
+    choices = {
+        (UNET, 'UNET'),
+        (RESNET18, 'ResNet18'),
+        (RESNET34, 'ResNet34'),
+        (RESNET50, 'ResNet50'),
+        (RESNET101, 'ResNet101'),
+        (RESNET152, 'ResNet152'),
+    }
+
+    name = models.CharField(max_length=200)
+    model_type = models.CharField(max_length=50, choices=choices, default=UNET)
+    model_weights = models.FileField(upload_to='models/', editable=False)
+    description = models.TextField(blank=True, null=True)
+    owner = models.ForeignKey('auth.User', related_name='models', on_delete=models.CASCADE)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    public = models.BooleanField(default=False)
