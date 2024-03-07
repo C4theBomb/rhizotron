@@ -43,7 +43,7 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: rhizotron.settings.prod
         with:
-          image: c4thebomb/csmb-housewars
+          image: c4thebomb/rhizotron
           registry: docker.io
           addLatest: true
           multiPlatform: true
