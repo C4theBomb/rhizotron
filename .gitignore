@@ -5,6 +5,7 @@ segmentation/checkpoints
 
 logs
 output
+static
 
 
 ### Django ###
