@@ -42,5 +42,6 @@ services:
 
 volumes:
   mysql: {}
+  media: {}
 networks:
   default: {}
