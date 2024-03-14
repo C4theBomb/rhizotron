@@ -4,7 +4,7 @@ from .defaults import *
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     '3.15.232.18',
