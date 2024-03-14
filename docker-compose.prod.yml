@@ -13,14 +13,34 @@ services:
       - path: .env
         required: true
     ports:
-      - 127.0.0.1:8000:8000
+      - 0.0.0.0:8000:8000
+    volumes:
+      - media:/app/media
     networks:
-      - rhizotron
-      - common-network
-    external_links:
-      - mysqldb
+      - default
+    depends_on:
+      mysqldb: 
+        condition: service_healthy
+  mysqldb:
+    restart: unless-stopped
+    image: mysql:8.3
+    ports: 
+      - 3306:3306
+    volumes:
+      - mysql:/var/lib/mysql
+    networks:
+      - default
+    environment:
+      MYSQL_ROOT_PASSWORD: "passw0rd"
+      MYSQL_DATABASE: "rhizotron"
+      MYSQL_USER: "rhizotron"
+      MYSQL_PASSWORD: "passw0rd"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
 
+volumes:
+  mysql: {}
 networks:
-  common-network:
-    external: true
-  rhizotron: {}
+  default: {}

@@ -14,9 +14,8 @@ from PIL import Image as PILImage
 import tempfile
 from urllib.parse import urlparse
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-from processing.models import Dataset, Picture, Mask
-from processing.views import DatasetViewSet, PictureViewSet, MaskViewSet
+from processing.models import Dataset, Picture, Mask, Model
+from processing.views import DatasetViewSet, PictureViewSet, MaskViewSet, ModelViewSet
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -338,3 +337,19 @@ class TestMaskViewSet(APITestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/octet-stream')
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT)
+class TestModelViewSet(APITestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(username='test', password='test')
+        # self.model = Model.objects.create(name="test_model", model_type=Model.UNET, model_weights=)
+
+    def test_list_endpoint(self) -> None:
+        request = self.client.get('datasets/')
+        force_authenticate(request, user=self.user)
+
+        view = DatasetViewSet.as_view({'get': 'list'})
+        response = view(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 0)

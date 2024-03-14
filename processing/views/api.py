@@ -49,7 +49,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
         if self.request.user.is_anonymous:
             return self.queryset.filter(public=True)
 
-        return self.queryset.filter(Q(owner=self.request.user) | Q(public=True))
+        is_owner_or_public = Q(owner=self.request.user) | Q(public=True)
+
+        return self.queryset.filter(is_owner_or_public)
 
 
 @extend_schema(tags=['pictures'])
@@ -156,7 +158,9 @@ class PictureViewSet(viewsets.ModelViewSet):
         if self.request.user.is_anonymous:
             return self.queryset.filter(dataset=self.kwargs['dataset_pk'], public=True)
 
-        return self.queryset.filter(Q(owner=self.user) | Q(public=True), dataset=self.kwargs['dataset_pk'])
+        is_owner_or_public = Q(dataset__owner=self.request.user) | Q(dataset__public=True)
+
+        return self.queryset.filter(is_owner_or_public, dataset=self.kwargs['dataset_pk'])
 
 
 @extend_schema(tags=['masks'])
@@ -303,10 +307,12 @@ class MaskViewSet(viewsets.ModelViewSet):
         return response
 
     def get_queryset(self) -> QuerySet[Mask]:
-        if self.user.is_anonymous:
+        if self.request.user.is_anonymous:
             return self.queryset.filter(picture=self.kwargs['image_pk'], public=True)
 
-        return self.queryset.filter(Q(owner=self.user) | Q(public=True), picture=self.kwargs['image_pk'],)
+        is_owner_or_public = Q(picture__dataset__owner=self.request.user) | Q(picture__dataset__public=True)
+
+        return self.queryset.filter(is_owner_or_public, picture=self.kwargs['image_pk'],)
 
     def get_serializer_class(self) -> Serializer:
         if self.action == 'create_labelme':

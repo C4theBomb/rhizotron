@@ -78,7 +78,7 @@ class Model(models.Model):
     RESNET152 = 'resnet152'
 
     choices = {
-        (UNET, 'UNET'),
+        (UNET, 'UNet'),
         (RESNET18, 'ResNet18'),
         (RESNET34, 'ResNet34'),
         (RESNET50, 'ResNet50'),
