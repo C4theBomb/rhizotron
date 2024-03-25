@@ -9,13 +9,11 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '3.15.232.18',
     '127.0.0.1',
-    '0.0.0.0'
+    '0.0.0.0',    
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://3.15.232.18',
-    '127.0.0.1',
-    '0.0.0.0'
 ]
 
 DATABASES = {
