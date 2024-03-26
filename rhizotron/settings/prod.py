@@ -9,7 +9,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '3.15.232.18',
     '127.0.0.1',
-    '0.0.0.0',    
+    '0.0.0.0',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -18,7 +18,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django_prometheus.db.backends.mysql',
         'NAME': os.environ.get('DATABASE_NAME'),
         'USER': os.environ.get('DATABASE_USERNAME'),
         'PASSWORD': os.environ.get('DATABASE_PASSWORD'),

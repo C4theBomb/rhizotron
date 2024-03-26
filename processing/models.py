@@ -2,9 +2,10 @@ import os
 
 from django.db import models
 from django.contrib.auth.models import User
+from django_prometheus.models import ExportModelOperationsMixin
 
 
-class Dataset(models.Model):
+class Dataset(ExportModelOperationsMixin('dataset'), models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     owner = models.ForeignKey(
@@ -14,7 +15,7 @@ class Dataset(models.Model):
     public = models.BooleanField(default=False)
 
 
-class Picture(models.Model):
+class Picture(ExportModelOperationsMixin('picture'), models.Model):
     dataset = models.ForeignKey(
         'processing.Dataset', related_name='pictures', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='images/', editable=False)
@@ -38,7 +39,7 @@ class Picture(models.Model):
         return self.dataset.public
 
 
-class Mask(models.Model):
+class Mask(ExportModelOperationsMixin('mask'), models.Model):
     picture = models.OneToOneField(
         'processing.Picture', related_name='mask', on_delete=models.CASCADE)
     image = models.ImageField(upload_to='masks/', editable=False)
@@ -69,7 +70,7 @@ class Mask(models.Model):
         return self.picture.public
 
 
-class Model(models.Model):
+class Model(ExportModelOperationsMixin('model'), models.Model):
     UNET = 'unet'
     RESNET18 = 'resnet18'
     RESNET34 = 'resnet34'

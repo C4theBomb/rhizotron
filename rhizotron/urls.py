@@ -24,6 +24,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 urlpatterns = [
     path('', include('core.urls')),
     path('', include('processing.urls')),
+    path('', include('django_prometheus.urls')),
 
     path('api/', include('rest_framework.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
