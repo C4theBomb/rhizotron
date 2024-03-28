@@ -8,6 +8,7 @@ services:
       dockerfile: Dockerfile
       platforms:
         - linux/amd64
+        - linux/arm64/v8
     image: c4thebomb/rhizotron:${TAG:-latest}
     env_file:
       - path: .env
