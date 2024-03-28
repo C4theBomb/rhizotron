@@ -10,8 +10,9 @@ services:
       - 8000:8000
     volumes:
       - ./:/app
+      - media:/app/media
     networks:
-      - rhizotron
+      - default 
     environment:
       DJANGO_SETTINGS_MODULE: "rhizotron.settings.docker"
     depends_on:
@@ -25,9 +26,9 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - rhizotron-mysql:/var/lib/mysql
+      - mysql:/var/lib/mysql
     networks:
-      - rhizotron
+      - default
     environment:
       MYSQL_ROOT_PASSWORD: "passw0rd"
       MYSQL_DATABASE: dev
@@ -35,9 +36,31 @@ services:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 5s
       retries: 10
+  prometheus:
+    restart: unless-stopped
+    image: bitnami/prometheus:2.51.1
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus:/prometheus
+    networks:
+      - default
+  grafana:
+    restart: unless-stopped
+    image: grafana/grafana:10.3.5
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana:/var/lib/grafana
+    networks:
+      - default
 
 volumes:
-  rhizotron-mysql:
+  mysql:
+  media:
+  grafana:
+  prometheus:
 
 networks:
-  rhizotron: {}
+  default: {}

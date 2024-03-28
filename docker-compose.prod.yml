@@ -40,9 +40,31 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 5s
       retries: 10
+  prometheus:
+    restart: unless-stopped
+    image: bitnami/prometheus:2.51.1
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus:/prometheus
+    networks:
+      - default
+  grafana:
+    restart: unless-stopped
+    image: grafana/grafana:10.3.5
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana:/var/lib/grafana
+    networks:
+      - default
 
 volumes:
   mysql: {}
   media: {}
+  grafana: {}
+  prometheus: {}
+
 networks:
   default: {}
